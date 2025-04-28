@@ -1,9 +1,10 @@
 import SwiftUI
 
 struct AddExerciseView: View {
-    @State private var exerciseName: String = ""
+    @Environment(\.dismiss) var dismiss
+    let exerciseType: ExerciseType
+    @State private var exerciseDate: Date
     @State private var duration: String = ""
-    @State private var date: Date = Date()
     @State private var sets: String = ""
     @State private var reps: String = ""
     @State private var distance: String = ""
@@ -14,14 +15,20 @@ struct AddExerciseView: View {
     private let units = ["km", "mi", "m"]
     private let weightUnits = ["kg", "lbs"]
     
+    init(exerciseType: ExerciseType, selectedDate: Date) {
+        self.exerciseType = exerciseType
+        _exerciseDate = State(initialValue: selectedDate)
+    }
+    
     var body: some View {
         NavigationView {
             Form {
                 Section(header: Text("Exercise Details")) {
-                    TextField("Exercise Name", text: $exerciseName)
+                    TextField("Exercise Name", text: .constant(exerciseType.name))
+                        .disabled(true)
                     TextField("Duration (minutes)", text: $duration)
                         .keyboardType(.numberPad)
-                    DatePicker("Date", selection: $date, displayedComponents: .date)
+                    DatePicker("Date and Time", selection: $exerciseDate)
                 }
                 
                 Section(header: Text("Sets and Reps")) {
@@ -66,15 +73,15 @@ struct AddExerciseView: View {
     }
     
     private func saveExercise() {
-        guard !exerciseName.isEmpty else { return }
+        guard !exerciseType.name.isEmpty else { return }
         
         let distanceValue = Float(distance)
         let weightValue = Float(weight)
         
         if let entryId = DatabaseHelper.shared.insertEntry(
-            exerciseName: exerciseName,
+            exerciseName: exerciseType.name,
             duration: duration,
-            date: date,
+            date: exerciseDate,  // Use the editable date
             sets: Int32(sets) ?? 0,
             reps: Int32(reps) ?? 0,
             distance: distanceValue,

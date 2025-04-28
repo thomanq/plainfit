@@ -1,32 +1,30 @@
 import SwiftUI
 
-struct ExerciseTypeView: View {
+struct CategoryExercisesView: View {
+    let category: Category
     let selectedDate: Date
-    @State private var categories: [Category] = []
     @State private var exerciseTypes: [ExerciseType] = []
     @State private var showingAddSheet = false
     
-    init(selectedDate: Date) {
+    init(category: Category, selectedDate: Date) {
+        self.category = category
         self.selectedDate = selectedDate
     }
-    
+
     var body: some View {
-        List {
-            ForEach(categories) { category in
-                NavigationLink(destination: CategoryExercisesView(category: category, selectedDate: selectedDate)) {
-                    Text(category.name)
-                        .font(.headline)
-                }
+        List(exerciseTypes, id: \.self) { exerciseType in
+            NavigationLink(destination: AddExerciseView(exerciseType: exerciseType, selectedDate: selectedDate)) {
+                Text(exerciseType.name)
             }
         }
-        .navigationTitle("Categories")
+        .navigationTitle(category.name)
         .toolbar {
             Button(action: { showingAddSheet = true }) {
                 Image(systemName: "plus")
             }
         }
         .onAppear {
-            categories = DatabaseHelper.shared.fetchCategories()
+            exerciseTypes = DatabaseHelper.shared.getExerciseTypesForCategory(categoryId: category.id)
         }
         .sheet(isPresented: $showingAddSheet) {
             AddExerciseTypeSheet(isPresented: $showingAddSheet)
