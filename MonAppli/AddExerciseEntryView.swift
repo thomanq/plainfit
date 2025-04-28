@@ -1,6 +1,6 @@
 import SwiftUI
 
-struct AddExerciseView: View {
+struct AddExerciseEntryView: View {
     @Environment(\.dismiss) var dismiss
     let exerciseType: ExerciseType
     @State private var exerciseDate: Date
