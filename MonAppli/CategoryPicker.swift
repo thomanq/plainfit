@@ -1,6 +1,6 @@
 import SwiftUI
 
-struct ExerciseTypeView: View {
+struct CategoryPicker: View {
     let selectedDate: Date
     @State private var categories: [Category] = []
     @State private var exerciseTypes: [ExerciseType] = []
@@ -13,13 +13,13 @@ struct ExerciseTypeView: View {
     var body: some View {
         List {
             ForEach(categories) { category in
-                NavigationLink(destination: CategoryExercisesView(category: category, selectedDate: selectedDate)) {
+                NavigationLink(destination: ExerciseTypePickerView(category: category, selectedDate: selectedDate)) {
                     Text(category.name)
                         .font(.headline)
                 }
             }
         }
-        .navigationTitle("Categories")
+        .navigationTitle("Select a category")
         .toolbar {
             Button(action: { showingAddSheet = true }) {
                 Image(systemName: "plus")

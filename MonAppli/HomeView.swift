@@ -7,7 +7,7 @@
 
 import SwiftUI
 
-struct ContentView: View {
+struct HomeView: View {
     @State private var exerciseName: String = ""
     @State private var duration: String = ""
     @State private var sets: String = ""
@@ -85,7 +85,7 @@ struct ContentView: View {
                 
                 VStack {
                     Spacer()
-                    NavigationLink(destination: ExerciseTypeView(selectedDate: currentDate)) {
+                    NavigationLink(destination: CategoryPicker(selectedDate: currentDate)) {
                         Image(systemName: "plus.circle.fill")
                             .font(.system(size: 50))
                             .foregroundColor(.blue)
@@ -129,6 +129,3 @@ struct ContentView: View {
     }
 }
 
-#Preview {
-    ContentView()
-}
