@@ -20,10 +20,18 @@ struct FitnessEntry: Identifiable {
     let weightUnit: String?
 }
 
-struct ExerciseType: Identifiable {
+struct ExerciseType: Identifiable, Hashable {
     let id: Int32
     let name: String
     let type: String
+    
+    func hash(into hasher: inout Hasher) {
+        hasher.combine(id)
+    }
+    
+    static func == (lhs: ExerciseType, rhs: ExerciseType) -> Bool {
+        return lhs.id == rhs.id
+    }
 }
 
 class DatabaseHelper {
@@ -364,4 +372,29 @@ class DatabaseHelper {
         return categories
     }
 
+    func getExerciseTypesForCategory(categoryId: Int32) -> [ExerciseType] {
+        var exerciseTypes: [ExerciseType] = []
+        
+        let query = """
+            SELECT et.* FROM exercise_types et
+            JOIN exercise_type_categories etc ON et.id = etc.exercise_type_id
+            WHERE etc.category_id = ?
+            ORDER BY et.name
+        """
+        
+        var queryStatement: OpaquePointer?
+        
+        if sqlite3_prepare_v2(db, query, -1, &queryStatement, nil) == SQLITE_OK {
+            sqlite3_bind_int(queryStatement, 1, categoryId)
+            
+            while sqlite3_step(queryStatement) == SQLITE_ROW {
+                let id = sqlite3_column_int(queryStatement, 0)
+                let name = String(cString: sqlite3_column_text(queryStatement, 1))
+                let type = String(cString: sqlite3_column_text(queryStatement, 2))
+                exerciseTypes.append(ExerciseType(id: id, name: name, type: type))
+            }
+        }
+        sqlite3_finalize(queryStatement)
+        return exerciseTypes
+    }
 }
