@@ -10,6 +10,8 @@ struct AddExerciseTypeSheet: View {
     @State private var selectedTypes: Set<String> = []
     @State private var showingNewCategorySheet = false
     @State private var newCategoryName = ""
+    @State private var showError = false
+    @State private var errorMessage = ""
     
     private let availableTypes = ["weight", "reps", "distance", "time"]
     
@@ -52,11 +54,18 @@ struct AddExerciseTypeSheet: View {
                 }
                 
                 Button("Add Exercise Type") {
-                    if !newName.isEmpty && !selectedTypes.isEmpty {
+                    if newName.isEmpty {
+                        errorMessage = "Please enter an exercise name"
+                        showError = true
+                    } else if selectedTypes.isEmpty {
+                        errorMessage = "Please select at least one exercise type"
+                        showError = true
+                    } else if selectedCategoryId == nil {
+                        errorMessage = "Please select a category"
+                        showError = true
+                    } else {
                         if let typeId = DatabaseHelper.shared.insertExerciseType(name: newName, type: newType) {
-                            if let categoryId = selectedCategoryId {
-                                _ = DatabaseHelper.shared.linkExerciseTypeToCategory(exerciseTypeId: typeId, categoryId: categoryId)
-                            }
+                            _ = DatabaseHelper.shared.linkExerciseTypeToCategory(exerciseTypeId: typeId, categoryId: selectedCategoryId!)
                             newName = ""
                             newType = ""
                             selectedCategoryId = nil
@@ -67,6 +76,13 @@ struct AddExerciseTypeSheet: View {
                 }
             }
             .navigationTitle("New Exercise Type")
+            .alert("Error", isPresented: $showError) {
+                Button("OK", role: .cancel) {
+                    showError = false
+                }
+            } message: {
+                Text(errorMessage)
+            }
             .navigationBarItems(trailing: Button("Cancel") {
                 isPresented = false
             })

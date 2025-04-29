@@ -32,7 +32,9 @@ struct ExerciseTypePickerView: View {
             .onAppear {
                 exerciseTypes = DatabaseHelper.shared.getExerciseTypesForCategory(categoryId: category.id)
             }
-            .sheet(isPresented: $showingAddSheet) {
+            .sheet(isPresented: $showingAddSheet, onDismiss: {
+                exerciseTypes = DatabaseHelper.shared.getExerciseTypesForCategory(categoryId: category.id)
+            }) {
                 AddExerciseTypeSheet(isPresented: $showingAddSheet)
             }
         }
