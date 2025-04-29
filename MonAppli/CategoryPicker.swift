@@ -1,6 +1,7 @@
 import SwiftUI
 
 struct CategoryPicker: View {
+    @Environment(\.presentationMode) var presentationMode
     let selectedDate: Date
     @State private var categories: [Category] = []
     @State private var exerciseTypes: [ExerciseType] = []
@@ -11,25 +12,28 @@ struct CategoryPicker: View {
     }
     
     var body: some View {
-        List {
-            ForEach(categories) { category in
-                NavigationLink(destination: ExerciseTypePickerView(category: category, selectedDate: selectedDate)) {
+        NavigationStack {
+            List(categories) { category in
+                NavigationLink(destination: ExerciseTypePickerView(
+                    category: category,
+                    categoryPickerPresentationMode: presentationMode
+                )) {
                     Text(category.name)
                         .font(.headline)
                 }
             }
-        }
-        .navigationTitle("Select a category")
-        .toolbar {
-            Button(action: { showingAddSheet = true }) {
-                Image(systemName: "plus")
+            .navigationTitle("Select a category")
+            .toolbar {
+                Button(action: { showingAddSheet = true }) {
+                    Image(systemName: "plus")
+                }
             }
-        }
-        .onAppear {
-            categories = DatabaseHelper.shared.fetchCategories()
-        }
-        .sheet(isPresented: $showingAddSheet) {
-            AddExerciseTypeSheet(isPresented: $showingAddSheet)
+            .onAppear {
+                categories = DatabaseHelper.shared.fetchCategories()
+            }
+            .sheet(isPresented: $showingAddSheet) {
+                AddExerciseTypeSheet(isPresented: $showingAddSheet)
+            }
         }
     }
 }
