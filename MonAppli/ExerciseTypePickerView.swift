@@ -2,32 +2,39 @@ import SwiftUI
 
 struct ExerciseTypePickerView: View {
     let category: Category
-    let selectedDate: Date
+    let categoryPickerPresentationMode: Binding<PresentationMode>
+    @State private var selectedDate: Date = Date()
     @State private var exerciseTypes: [ExerciseType] = []
     @State private var showingAddSheet = false
     
-    init(category: Category, selectedDate: Date) {
+    init(category: Category, categoryPickerPresentationMode: Binding<PresentationMode>) {
         self.category = category
-        self.selectedDate = selectedDate
+        self.categoryPickerPresentationMode = categoryPickerPresentationMode
     }
 
     var body: some View {
-        List(exerciseTypes, id: \.self) { exerciseType in
-            NavigationLink(destination: AddExerciseEntryView(exerciseType: exerciseType, selectedDate: selectedDate)) {
-                Text(exerciseType.name)
+        NavigationStack {
+            List(exerciseTypes, id: \.self) { exerciseType in
+                NavigationLink(destination: AddExerciseEntryView(
+                    exerciseType: exerciseType,
+                    selectedDate: selectedDate,
+                    categoryPickerPresentationMode: categoryPickerPresentationMode
+                )) {
+                    Text(exerciseType.name)
+                }
             }
-        }
-        .navigationTitle(category.name)
-        .toolbar {
-            Button(action: { showingAddSheet = true }) {
-                Image(systemName: "plus")
+            .navigationTitle(category.name)
+            .toolbar {
+                Button(action: { showingAddSheet = true }) {
+                    Image(systemName: "plus")
+                }
             }
-        }
-        .onAppear {
-            exerciseTypes = DatabaseHelper.shared.getExerciseTypesForCategory(categoryId: category.id)
-        }
-        .sheet(isPresented: $showingAddSheet) {
-            AddExerciseTypeSheet(isPresented: $showingAddSheet)
+            .onAppear {
+                exerciseTypes = DatabaseHelper.shared.getExerciseTypesForCategory(categoryId: category.id)
+            }
+            .sheet(isPresented: $showingAddSheet) {
+                AddExerciseTypeSheet(isPresented: $showingAddSheet)
+            }
         }
     }
 }

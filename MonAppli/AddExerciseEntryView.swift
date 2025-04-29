@@ -2,6 +2,8 @@ import SwiftUI
 
 struct AddExerciseEntryView: View {
     @Environment(\.dismiss) var dismiss
+    let categoryPickerPresentationMode: Binding<PresentationMode>
+
     let exerciseType: ExerciseType
     @State private var exerciseDate: Date
     @State private var duration: String = ""
@@ -11,17 +13,18 @@ struct AddExerciseEntryView: View {
     @State private var distanceUnit: String = "km"
     @State private var weight: String = ""
     @State private var weightUnit: String = "kg"
-    
+
     private let units = ["km", "mi", "m"]
     private let weightUnits = ["kg", "lbs"]
     
-    init(exerciseType: ExerciseType, selectedDate: Date) {
+    init(exerciseType: ExerciseType, selectedDate: Date, categoryPickerPresentationMode: Binding<PresentationMode>) {
         self.exerciseType = exerciseType
+        self.categoryPickerPresentationMode = categoryPickerPresentationMode
         _exerciseDate = State(initialValue: selectedDate)
     }
     
     var body: some View {
-        NavigationView {
+        NavigationStack {
             Form {
                 Section(header: Text("Exercise Details")) {
                     TextField("Exercise Name", text: .constant(exerciseType.name))
@@ -63,7 +66,7 @@ struct AddExerciseEntryView: View {
                         .pickerStyle(SegmentedPickerStyle())
                     }
                 }
-                
+
                 Button(action: saveExercise) {
                     Text("Save Exercise")
                 }
@@ -91,5 +94,6 @@ struct AddExerciseEntryView: View {
         ) {
             // Handle successful save
         }
+        categoryPickerPresentationMode.wrappedValue.dismiss()
     }
 }

@@ -94,25 +94,6 @@ struct HomeView: View {
                     .padding(.bottom, 16)
                 }
             }
-            .sheet(isPresented: $showingCategorySheet) {
-                NavigationView {
-                    Form {
-                        TextField("Category Name", text: $newCategoryName)
-                        Button("Add Category") {
-                            if (!newCategoryName.isEmpty) {
-                                _ = DatabaseHelper.shared.insertCategory(name: newCategoryName)
-                                categories = DatabaseHelper.shared.fetchCategories()
-                                newCategoryName = ""
-                                showingCategorySheet = false
-                            }
-                        }
-                    }
-                    .navigationTitle("New Category")
-                    .navigationBarItems(trailing: Button("Cancel") {
-                        showingCategorySheet = false
-                    })
-                }
-            }
             .onChange(of: currentDate) { _ in
                 fitnessEntries = DatabaseHelper.shared.fetchEntries(for: currentDate)
             }
