@@ -10,7 +10,7 @@ struct Category: Identifiable {
 struct FitnessEntry: Identifiable {
     let id: Int32
     let exerciseName: String
-    let duration: String
+    let duration: Int32  // Duration in milliseconds
     let date: Date
     let sets: Int32
     let reps: Int32
@@ -46,7 +46,7 @@ class DatabaseHelper {
                     CREATE TABLE IF NOT EXISTS fitness_entries (
                         id INTEGER PRIMARY KEY AUTOINCREMENT,
                         exercise_name TEXT,
-                        duration TEXT,
+                        duration INTEGER,
                         date INTEGER,
                         sets INTEGER,
                         reps INTEGER,
@@ -124,7 +124,7 @@ class DatabaseHelper {
         }
     }
 
-    func insertEntry(exerciseName: String, duration: String, date: Date, sets: Int32, reps: Int32, distance: Float? = nil, distanceUnit: String? = nil, weight: Float? = nil, weightUnit: String? = nil) -> Int32? {
+    func insertEntry(exerciseName: String, duration: Int32, date: Date, sets: Int32, reps: Int32, distance: Float? = nil, distanceUnit: String? = nil, weight: Float? = nil, weightUnit: String? = nil) -> Int32? {
         let insertStatementString = "INSERT INTO fitness_entries (exercise_name, duration, date, sets, reps, distance, distance_unit, weight, weight_unit) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)"
         var insertStatement: OpaquePointer?
         
@@ -132,7 +132,7 @@ class DatabaseHelper {
             let timestamp = Int32(date.timeIntervalSince1970)
             
             sqlite3_bind_text(insertStatement, 1, (exerciseName as NSString).utf8String, -1, nil)
-            sqlite3_bind_text(insertStatement, 2, (duration as NSString).utf8String, -1, nil)
+            sqlite3_bind_int(insertStatement, 2, duration)
             sqlite3_bind_int(insertStatement, 3, timestamp)
             sqlite3_bind_int(insertStatement, 4, sets)
             sqlite3_bind_int(insertStatement, 5, reps)
@@ -190,7 +190,7 @@ class DatabaseHelper {
             while sqlite3_step(queryStatement) == SQLITE_ROW {
                 let id = sqlite3_column_int(queryStatement, 0)
                 let exerciseName = String(cString: sqlite3_column_text(queryStatement, 1))
-                let duration = String(cString: sqlite3_column_text(queryStatement, 2))
+                let duration = sqlite3_column_int(queryStatement, 2)
                 let timestamp = sqlite3_column_int(queryStatement, 3)
                 let sets = sqlite3_column_int(queryStatement, 4)
                 let reps = sqlite3_column_int(queryStatement, 5)

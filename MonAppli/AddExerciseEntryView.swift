@@ -6,7 +6,9 @@ struct AddExerciseEntryView: View {
 
     let exerciseType: ExerciseType
     @State private var exerciseDate: Date
-    @State private var duration: String = ""
+    @State private var hours: String = ""
+    @State private var minutes: String = ""
+    @State private var seconds: String = ""
     @State private var sets: String = ""
     @State private var reps: String = ""
     @State private var distance: String = ""
@@ -29,8 +31,19 @@ struct AddExerciseEntryView: View {
                 Section(header: Text("Exercise Details")) {
                     TextField("Exercise Name", text: .constant(exerciseType.name))
                         .disabled(true)
-                    TextField("Duration (minutes)", text: $duration)
-                        .keyboardType(.numberPad)
+                    HStack {
+                        TextField("HH", text: $hours)
+                            .keyboardType(.numberPad)
+                            .frame(maxWidth: 50)
+                        Text(":")
+                        TextField("MM", text: $minutes)
+                            .keyboardType(.numberPad)
+                            .frame(maxWidth: 50)
+                        Text(":")
+                        TextField("SS", text: $seconds)
+                            .keyboardType(.numberPad)
+                            .frame(maxWidth: 50)
+                    }
                     DatePicker("Date and Time", selection: $exerciseDate)
                 }
                 
@@ -78,13 +91,19 @@ struct AddExerciseEntryView: View {
     private func saveExercise() {
         guard !exerciseType.name.isEmpty else { return }
         
+        // Convert HH:MM:SS to milliseconds
+        let hoursMs = (Int32(hours) ?? 0) * 3600000
+        let minutesMs = (Int32(minutes) ?? 0) * 60000
+        let secondsMs = (Int32(seconds) ?? 0) * 1000
+        let totalDurationMs = hoursMs + minutesMs + secondsMs
+        
         let distanceValue = Float(distance)
         let weightValue = Float(weight)
         
         if let entryId = DatabaseHelper.shared.insertEntry(
             exerciseName: exerciseType.name,
-            duration: duration,
-            date: exerciseDate,  // Use the editable date
+            duration: totalDurationMs,
+            date: exerciseDate,
             sets: Int32(sets) ?? 0,
             reps: Int32(reps) ?? 0,
             distance: distanceValue,
