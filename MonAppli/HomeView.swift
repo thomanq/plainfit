@@ -19,6 +19,14 @@ struct HomeView: View {
     @State private var showingCategorySheet = false
     @State private var newCategoryName = ""
     
+    private func formatDuration(_ milliseconds: Int32) -> String {
+        let totalSeconds = milliseconds / 1000
+        let hours = totalSeconds / 3600
+        let minutes = (totalSeconds % 3600) / 60
+        let seconds = totalSeconds % 60
+        return String(format: "%02d:%02d:%02d", hours, minutes, seconds)
+    }
+
     var body: some View {
         NavigationView {
             ZStack {
@@ -62,7 +70,7 @@ struct HomeView: View {
                             VStack(alignment: .leading) {
                                 Text("Exercise: \(entry.exerciseName)")
                                     .font(.headline)
-                                Text("Duration: \(entry.duration) minutes")
+                                Text("Duration: \(formatDuration(entry.duration))")
                                     .font(.subheadline)
                                 Text("Sets: \(entry.sets) | Reps: \(entry.reps)")
                                     .font(.subheadline)
