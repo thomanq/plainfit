@@ -186,7 +186,7 @@
 					};
 				};
 			};
-			buildConfigurationList = E2B16C6F2DBE8DEA00722A4C /* Build configuration list for PBXProject "MonAppli" */;
+			buildConfigurationList = E2B16C6F2DBE8DEA00722A4C /* Build configuration list for PBXProject "PlainFit" */;
 			developmentRegion = en;
 			hasScannedForEncodings = 0;
 			knownRegions = (
@@ -408,7 +408,7 @@
 					"@executable_path/Frameworks",
 				);
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = fr.anq.PlainFit;
+				PRODUCT_BUNDLE_IDENTIFIER = fr.anq.plainfit;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
@@ -436,7 +436,7 @@
 					"@executable_path/Frameworks",
 				);
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = fr.anq.PlainFit;
+				PRODUCT_BUNDLE_IDENTIFIER = fr.anq.plainfit;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
@@ -515,7 +515,7 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
-		E2B16C6F2DBE8DEA00722A4C /* Build configuration list for PBXProject "MonAppli" */ = {
+		E2B16C6F2DBE8DEA00722A4C /* Build configuration list for PBXProject "PlainFit" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				E2B16C932DBE8DEC00722A4C /* Debug */,
