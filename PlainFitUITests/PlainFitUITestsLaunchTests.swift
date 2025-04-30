@@ -1,13 +1,13 @@
 //
-//  MonAppliUITestsLaunchTests.swift
-//  MonAppliUITests
+//  PlainFitUITestsLaunchTests.swift
+//  PlainFitUITests
 //
 //  Created by Thomas on 27/04/2025.
 //
 
 import XCTest
 
-final class MonAppliUITestsLaunchTests: XCTestCase {
+final class PlainFitUITestsLaunchTests: XCTestCase {
 
     override class var runsForEachTargetApplicationUIConfiguration: Bool {
         true

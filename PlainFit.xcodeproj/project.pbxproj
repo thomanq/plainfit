@@ -12,37 +12,37 @@
 			containerPortal = E2B16C6C2DBE8DEA00722A4C /* Project object */;
 			proxyType = 1;
 			remoteGlobalIDString = E2B16C732DBE8DEA00722A4C;
-			remoteInfo = MonAppli;
+			remoteInfo = PlainFit;
 		};
 		E2B16C8C2DBE8DEC00722A4C /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = E2B16C6C2DBE8DEA00722A4C /* Project object */;
 			proxyType = 1;
 			remoteGlobalIDString = E2B16C732DBE8DEA00722A4C;
-			remoteInfo = MonAppli;
+			remoteInfo = PlainFit;
 		};
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
-		E2B16C742DBE8DEA00722A4C /* MonAppli.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = MonAppli.app; sourceTree = BUILT_PRODUCTS_DIR; };
-		E2B16C812DBE8DEC00722A4C /* MonAppliTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = MonAppliTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
-		E2B16C8B2DBE8DEC00722A4C /* MonAppliUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = MonAppliUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		E2B16C742DBE8DEA00722A4C /* PlainFit.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = PlainFit.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		E2B16C812DBE8DEC00722A4C /* PlainFitTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = PlainFitTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		E2B16C8B2DBE8DEC00722A4C /* PlainFitUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = PlainFitUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
-		E2B16C762DBE8DEA00722A4C /* MonAppli */ = {
+		E2B16C762DBE8DEA00722A4C /* PlainFit */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
-			path = MonAppli;
+			path = PlainFit;
 			sourceTree = "<group>";
 		};
-		E2B16C842DBE8DEC00722A4C /* MonAppliTests */ = {
+		E2B16C842DBE8DEC00722A4C /* PlainFitTests */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
-			path = MonAppliTests;
+			path = PlainFitTests;
 			sourceTree = "<group>";
 		};
-		E2B16C8E2DBE8DEC00722A4C /* MonAppliUITests */ = {
+		E2B16C8E2DBE8DEC00722A4C /* PlainFitUITests */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
-			path = MonAppliUITests;
+			path = PlainFitUITests;
 			sourceTree = "<group>";
 		};
 /* End PBXFileSystemSynchronizedRootGroup section */
@@ -75,9 +75,9 @@
 		E2B16C6B2DBE8DEA00722A4C = {
 			isa = PBXGroup;
 			children = (
-				E2B16C762DBE8DEA00722A4C /* MonAppli */,
-				E2B16C842DBE8DEC00722A4C /* MonAppliTests */,
-				E2B16C8E2DBE8DEC00722A4C /* MonAppliUITests */,
+				E2B16C762DBE8DEA00722A4C /* PlainFit */,
+				E2B16C842DBE8DEC00722A4C /* PlainFitTests */,
+				E2B16C8E2DBE8DEC00722A4C /* PlainFitUITests */,
 				E2B16C752DBE8DEA00722A4C /* Products */,
 			);
 			sourceTree = "<group>";
@@ -85,9 +85,9 @@
 		E2B16C752DBE8DEA00722A4C /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				E2B16C742DBE8DEA00722A4C /* MonAppli.app */,
-				E2B16C812DBE8DEC00722A4C /* MonAppliTests.xctest */,
-				E2B16C8B2DBE8DEC00722A4C /* MonAppliUITests.xctest */,
+				E2B16C742DBE8DEA00722A4C /* PlainFit.app */,
+				E2B16C812DBE8DEC00722A4C /* PlainFitTests.xctest */,
+				E2B16C8B2DBE8DEC00722A4C /* PlainFitUITests.xctest */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -95,9 +95,9 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
-		E2B16C732DBE8DEA00722A4C /* MonAppli */ = {
+		E2B16C732DBE8DEA00722A4C /* PlainFit */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = E2B16C952DBE8DEC00722A4C /* Build configuration list for PBXNativeTarget "MonAppli" */;
+			buildConfigurationList = E2B16C952DBE8DEC00722A4C /* Build configuration list for PBXNativeTarget "PlainFit" */;
 			buildPhases = (
 				E2B16C702DBE8DEA00722A4C /* Sources */,
 				E2B16C712DBE8DEA00722A4C /* Frameworks */,
@@ -108,18 +108,18 @@
 			dependencies = (
 			);
 			fileSystemSynchronizedGroups = (
-				E2B16C762DBE8DEA00722A4C /* MonAppli */,
+				E2B16C762DBE8DEA00722A4C /* PlainFit */,
 			);
-			name = MonAppli;
+			name = PlainFit;
 			packageProductDependencies = (
 			);
-			productName = MonAppli;
-			productReference = E2B16C742DBE8DEA00722A4C /* MonAppli.app */;
+			productName = PlainFit;
+			productReference = E2B16C742DBE8DEA00722A4C /* PlainFit.app */;
 			productType = "com.apple.product-type.application";
 		};
-		E2B16C802DBE8DEC00722A4C /* MonAppliTests */ = {
+		E2B16C802DBE8DEC00722A4C /* PlainFitTests */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = E2B16C982DBE8DEC00722A4C /* Build configuration list for PBXNativeTarget "MonAppliTests" */;
+			buildConfigurationList = E2B16C982DBE8DEC00722A4C /* Build configuration list for PBXNativeTarget "PlainFitTests" */;
 			buildPhases = (
 				E2B16C7D2DBE8DEC00722A4C /* Sources */,
 				E2B16C7E2DBE8DEC00722A4C /* Frameworks */,
@@ -131,18 +131,18 @@
 				E2B16C832DBE8DEC00722A4C /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
-				E2B16C842DBE8DEC00722A4C /* MonAppliTests */,
+				E2B16C842DBE8DEC00722A4C /* PlainFitTests */,
 			);
-			name = MonAppliTests;
+			name = PlainFitTests;
 			packageProductDependencies = (
 			);
-			productName = MonAppliTests;
-			productReference = E2B16C812DBE8DEC00722A4C /* MonAppliTests.xctest */;
+			productName = PlainFitTests;
+			productReference = E2B16C812DBE8DEC00722A4C /* PlainFitTests.xctest */;
 			productType = "com.apple.product-type.bundle.unit-test";
 		};
-		E2B16C8A2DBE8DEC00722A4C /* MonAppliUITests */ = {
+		E2B16C8A2DBE8DEC00722A4C /* PlainFitUITests */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = E2B16C9B2DBE8DEC00722A4C /* Build configuration list for PBXNativeTarget "MonAppliUITests" */;
+			buildConfigurationList = E2B16C9B2DBE8DEC00722A4C /* Build configuration list for PBXNativeTarget "PlainFitUITests" */;
 			buildPhases = (
 				E2B16C872DBE8DEC00722A4C /* Sources */,
 				E2B16C882DBE8DEC00722A4C /* Frameworks */,
@@ -154,13 +154,13 @@
 				E2B16C8D2DBE8DEC00722A4C /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
-				E2B16C8E2DBE8DEC00722A4C /* MonAppliUITests */,
+				E2B16C8E2DBE8DEC00722A4C /* PlainFitUITests */,
 			);
-			name = MonAppliUITests;
+			name = PlainFitUITests;
 			packageProductDependencies = (
 			);
-			productName = MonAppliUITests;
-			productReference = E2B16C8B2DBE8DEC00722A4C /* MonAppliUITests.xctest */;
+			productName = PlainFitUITests;
+			productReference = E2B16C8B2DBE8DEC00722A4C /* PlainFitUITests.xctest */;
 			productType = "com.apple.product-type.bundle.ui-testing";
 		};
 /* End PBXNativeTarget section */
@@ -200,9 +200,9 @@
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
-				E2B16C732DBE8DEA00722A4C /* MonAppli */,
-				E2B16C802DBE8DEC00722A4C /* MonAppliTests */,
-				E2B16C8A2DBE8DEC00722A4C /* MonAppliUITests */,
+				E2B16C732DBE8DEA00722A4C /* PlainFit */,
+				E2B16C802DBE8DEC00722A4C /* PlainFitTests */,
+				E2B16C8A2DBE8DEC00722A4C /* PlainFitUITests */,
 			);
 		};
 /* End PBXProject section */
@@ -258,12 +258,12 @@
 /* Begin PBXTargetDependency section */
 		E2B16C832DBE8DEC00722A4C /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
-			target = E2B16C732DBE8DEA00722A4C /* MonAppli */;
+			target = E2B16C732DBE8DEA00722A4C /* PlainFit */;
 			targetProxy = E2B16C822DBE8DEC00722A4C /* PBXContainerItemProxy */;
 		};
 		E2B16C8D2DBE8DEC00722A4C /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
-			target = E2B16C732DBE8DEA00722A4C /* MonAppli */;
+			target = E2B16C732DBE8DEA00722A4C /* PlainFit */;
 			targetProxy = E2B16C8C2DBE8DEC00722A4C /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
@@ -408,7 +408,7 @@
 					"@executable_path/Frameworks",
 				);
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = fr.anq.MonAppli;
+				PRODUCT_BUNDLE_IDENTIFIER = fr.anq.PlainFit;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
@@ -436,7 +436,7 @@
 					"@executable_path/Frameworks",
 				);
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = fr.anq.MonAppli;
+				PRODUCT_BUNDLE_IDENTIFIER = fr.anq.PlainFit;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
@@ -453,12 +453,12 @@
 				GENERATE_INFOPLIST_FILE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 18.4;
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = fr.anq.MonAppliTests;
+				PRODUCT_BUNDLE_IDENTIFIER = fr.anq.PlainFitTests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = NO;
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
-				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/MonAppli.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/MonAppli";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/PlainFit.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/PlainFit";
 			};
 			name = Debug;
 		};
@@ -471,12 +471,12 @@
 				GENERATE_INFOPLIST_FILE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 18.4;
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = fr.anq.MonAppliTests;
+				PRODUCT_BUNDLE_IDENTIFIER = fr.anq.PlainFitTests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = NO;
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
-				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/MonAppli.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/MonAppli";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/PlainFit.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/PlainFit";
 			};
 			name = Release;
 		};
@@ -487,12 +487,12 @@
 				CURRENT_PROJECT_VERSION = 1;
 				GENERATE_INFOPLIST_FILE = YES;
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = fr.anq.MonAppliUITests;
+				PRODUCT_BUNDLE_IDENTIFIER = fr.anq.PlainFitUITests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = NO;
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
-				TEST_TARGET_NAME = MonAppli;
+				TEST_TARGET_NAME = PlainFit;
 			};
 			name = Debug;
 		};
@@ -503,12 +503,12 @@
 				CURRENT_PROJECT_VERSION = 1;
 				GENERATE_INFOPLIST_FILE = YES;
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = fr.anq.MonAppliUITests;
+				PRODUCT_BUNDLE_IDENTIFIER = fr.anq.PlainFitUITests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = NO;
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
-				TEST_TARGET_NAME = MonAppli;
+				TEST_TARGET_NAME = PlainFit;
 			};
 			name = Release;
 		};
@@ -524,7 +524,7 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		E2B16C952DBE8DEC00722A4C /* Build configuration list for PBXNativeTarget "MonAppli" */ = {
+		E2B16C952DBE8DEC00722A4C /* Build configuration list for PBXNativeTarget "PlainFit" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				E2B16C962DBE8DEC00722A4C /* Debug */,
@@ -533,7 +533,7 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		E2B16C982DBE8DEC00722A4C /* Build configuration list for PBXNativeTarget "MonAppliTests" */ = {
+		E2B16C982DBE8DEC00722A4C /* Build configuration list for PBXNativeTarget "PlainFitTests" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				E2B16C992DBE8DEC00722A4C /* Debug */,
@@ -542,7 +542,7 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		E2B16C9B2DBE8DEC00722A4C /* Build configuration list for PBXNativeTarget "MonAppliUITests" */ = {
+		E2B16C9B2DBE8DEC00722A4C /* Build configuration list for PBXNativeTarget "PlainFitUITests" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				E2B16C9C2DBE8DEC00722A4C /* Debug */,

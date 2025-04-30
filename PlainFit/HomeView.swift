@@ -1,6 +1,6 @@
 //
 //  ContentView.swift
-//  MonAppli
+//  PlainFit
 //
 //  Created by Thomas on 27/04/2025.
 //
@@ -121,7 +121,7 @@ struct HomeView: View {
       }
       .toolbar {
         ToolbarItem(placement: .principal) {
-          Text("My Fitness Tracker")
+          Text("PlainFit Fitness Tracker")
             .font(.headline)
         }
 
