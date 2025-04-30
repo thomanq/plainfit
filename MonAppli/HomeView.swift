@@ -8,113 +8,132 @@
 import SwiftUI
 
 struct HomeView: View {
-    @State private var exerciseName: String = ""
-    @State private var duration: String = ""
-    @State private var sets: String = ""
-    @State private var reps: String = ""
-    @State private var fitnessEntries: [FitnessEntry] = []
-    @State private var currentDate: Date = Date()
-    @State private var categories: [Category] = []
-    @State private var selectedCategoryId: Int32?
-    @State private var showingCategorySheet = false
-    @State private var newCategoryName = ""
-    
-    private func formatDuration(_ milliseconds: Int32) -> String {
-        let totalSeconds = milliseconds / 1000
-        let hours = totalSeconds / 3600
-        let minutes = (totalSeconds % 3600) / 60
-        let seconds = totalSeconds % 60
-        return String(format: "%02d:%02d:%02d", hours, minutes, seconds)
-    }
+  @State private var exerciseName: String = ""
+  @State private var duration: String = ""
+  @State private var sets: String = ""
+  @State private var reps: String = ""
+  @State private var fitnessEntries: [FitnessEntry] = []
+  @State private var currentDate: Date = Date()
+  @State private var categories: [Category] = []
+  @State private var selectedCategoryId: Int32?
+  @State private var showingCategorySheet = false
+  @State private var newCategoryName = ""
+  @State private var showCategoryPicker : Bool = false
 
-    var body: some View {
-        NavigationView {
-            ZStack {
-                ScrollView {
-                    VStack(spacing: 16) {
-                        HStack {
-                            Button(action: {
-                                currentDate = Calendar.current.date(byAdding: .day, value: -1, to: currentDate) ?? currentDate
-                            }) {
-                                Image(systemName: "chevron.left")
-                                    .foregroundColor(.blue)
-                            }
-                            
-                            Spacer()
-                            
-                            Text(currentDate.formatted(date: .abbreviated, time: .omitted))
-                                .font(.headline)
-                            
-                            
-                            
-                            Button(action: {
-                                currentDate = Date()
-                            }) {
-                                Image(systemName: "circle.fill")
-                                    .foregroundColor(.blue)
-                                    .font(.system(size: 14))
-                            }
-                            .padding(.leading, 8)
-                            Spacer()
-                            Button(action: {
-                                currentDate = Calendar.current.date(byAdding: .day, value: 1, to: currentDate) ?? currentDate
-                            }) {
-                                Image(systemName: "chevron.right")
-                                    .foregroundColor(.blue)
-                            }
-                            
-                        }
-                        .padding(.horizontal)
+  private func formatDuration(_ milliseconds: Int32) -> String {
+    let totalSeconds = milliseconds / 1000
+    let hours = totalSeconds / 3600
+    let minutes = (totalSeconds % 3600) / 60
+    let seconds = totalSeconds % 60
+    return String(format: "%02d:%02d:%02d", hours, minutes, seconds)
+  }
 
-                        ForEach(fitnessEntries) { entry in
-                            VStack(alignment: .leading) {
-                                Text("Exercise: \(entry.exerciseName)")
-                                    .font(.headline)
-                                Text("Duration: \(formatDuration(entry.duration))")
-                                    .font(.subheadline)
-                                Text("Sets: \(entry.sets) | Reps: \(entry.reps)")
-                                    .font(.subheadline)
-                                let categories = DatabaseHelper.shared.getCategoriesForEntry(entryId: entry.id)
-                                if !categories.isEmpty {
-                                    Text("Categories: \(categories.map { $0.name }.joined(separator: ", "))")
-                                        .font(.caption)
-                                        .foregroundColor(.gray)
-                                }
-                            }
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                            .padding()
-                            .background(Color.gray.opacity(0.1))
-                            .cornerRadius(8)
-                            .padding(.horizontal)
-                        }
-                    }
-                    .padding(.vertical)
+  var body: some View {
+    NavigationView {
+      ZStack {
+        ScrollView {
+          VStack(spacing: 16) {
+            HStack {
+              Button(action: {
+                currentDate =
+                  Calendar.current.date(byAdding: .day, value: -1, to: currentDate) ?? currentDate
+              }) {
+                Image(systemName: "chevron.left")
+                  .foregroundColor(.blue)
+              }
+
+              Spacer()
+
+              Text(currentDate.formatted(date: .abbreviated, time: .omitted))
+                .font(.headline)
+
+              Button(action: {
+                currentDate = Date()
+              }) {
+                Image(systemName: "circle.fill")
+                  .foregroundColor(.blue)
+                  .font(.system(size: 14))
+              }
+              .padding(.leading, 8)
+              Spacer()
+              Button(action: {
+                currentDate =
+                  Calendar.current.date(byAdding: .day, value: 1, to: currentDate) ?? currentDate
+              }) {
+                Image(systemName: "chevron.right")
+                  .foregroundColor(.blue)
+              }
+
+            }
+            .padding(.horizontal)
+
+            ForEach(fitnessEntries) { entry in
+              VStack(alignment: .leading) {
+                Text("Exercise: \(entry.exerciseName)")
+                  .font(.headline)
+                Text("Duration: \(formatDuration(entry.duration))")
+                  .font(.subheadline)
+                Text("Sets: \(entry.sets) | Reps: \(entry.reps)")
+                  .font(.subheadline)
+                let categories = DatabaseHelper.shared.getCategoriesForEntry(entryId: entry.id)
+                if !categories.isEmpty {
+                  Text("Categories: \(categories.map { $0.name }.joined(separator: ", "))")
+                    .font(.caption)
+                    .foregroundColor(.gray)
                 }
-                
-                VStack {
-                    Spacer()
-                    NavigationLink(destination: CategoryPicker(selectedDate: currentDate)) {
-                        Image(systemName: "plus.circle.fill")
-                            .font(.system(size: 50))
-                            .foregroundColor(.blue)
-                            .background(Color.white.clipShape(Circle()))
-                    }
-                    .padding(.bottom, 16)
-                }
+              }
+              .frame(maxWidth: .infinity, alignment: .leading)
+              .padding()
+              .background(Color.gray.opacity(0.1))
+              .cornerRadius(8)
+              .padding(.horizontal)
             }
-            .onChange(of: currentDate) { _ in
-                fitnessEntries = DatabaseHelper.shared.fetchEntries(for: currentDate)
-            }
-            .onAppear {
-                fitnessEntries = DatabaseHelper.shared.fetchEntries(for: currentDate)
-                categories = DatabaseHelper.shared.fetchCategories()
-            }
-            .navigationTitle("Fitness Tracker")
+          }
+          .padding(.vertical)
         }
-    }
-    
-    private func hideKeyboard() {
-        UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
-    }
-}
 
+        VStack {
+          Spacer()
+          NavigationLink(destination: CategoryPicker(selectedDate: currentDate, showCategoryPicker: $showCategoryPicker), isActive: $showCategoryPicker) {
+            Image(systemName: "plus.circle.fill")
+              .font(.system(size: 50))
+              .foregroundColor(.blue)
+              .background(Color.white.clipShape(Circle()))
+              .onTapGesture {
+                showCategoryPicker = true
+              }
+          }
+          .padding(.bottom, 16)
+        }
+      }
+      .toolbar {
+        ToolbarItem(placement: .principal) {
+          Text("My Fitness Tracker")
+            .font(.headline)
+        }
+
+        ToolbarItem(placement: .topBarTrailing) {
+          Button(action: {
+            // Menu action here
+          }) {
+            Image(systemName: "line.horizontal.3")
+          }
+        }
+
+      }
+      .onChange(of: currentDate) { oldValue, newValue in
+        fitnessEntries = DatabaseHelper.shared.fetchEntries(for: newValue)
+      }
+      .onAppear {
+        fitnessEntries = DatabaseHelper.shared.fetchEntries(for: currentDate)
+        categories = DatabaseHelper.shared.fetchCategories()
+      }
+      .navigationBarTitleDisplayMode(.inline)
+    }
+  }
+
+  private func hideKeyboard() {
+    UIApplication.shared.sendAction(
+      #selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
+  }
+}
