@@ -28,6 +28,19 @@ struct HomeView: View {
     return String(format: "%02d:%02d:%02d", hours, minutes, seconds)
   }
 
+  private func export() {
+    let csvString = DatabaseHelper.shared.exportToCSV()
+    let activityViewController = UIActivityViewController(
+      activityItems: [csvString],
+      applicationActivities: nil
+    )
+    if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
+       let window = windowScene.windows.first,
+       let rootViewController = window.rootViewController {
+      rootViewController.present(activityViewController, animated: true)
+    }
+  }
+
   var body: some View {
     NavigationView {
       ZStack {
@@ -113,13 +126,14 @@ struct HomeView: View {
         }
 
         ToolbarItem(placement: .topBarTrailing) {
-          Button(action: {
-            // Menu action here
-          }) {
+          Menu {
+            Button(action: export) {
+              Label("Export to CSV", systemImage: "square.and.arrow.up")
+            }
+          } label: {
             Image(systemName: "line.horizontal.3")
           }
         }
-
       }
       .onChange(of: currentDate) { oldValue, newValue in
         fitnessEntries = DatabaseHelper.shared.fetchEntries(for: newValue)
