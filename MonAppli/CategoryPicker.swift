@@ -19,6 +19,7 @@ struct CategoryPicker: View {
         NavigationLink(
           destination: ExerciseTypePickerView(
             category: category,
+            selectedDate: selectedDate,
             showCategoryPicker: $showCategoryPicker
           )
         ) {
