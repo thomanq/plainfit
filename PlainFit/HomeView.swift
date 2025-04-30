@@ -19,6 +19,14 @@ struct HomeView: View {
   @State private var showingCategorySheet = false
   @State private var newCategoryName = ""
   @State private var showCategoryPicker : Bool = false
+  @State private var showingLicense = false
+  @State private var licenseText: String = {
+    if let licensePath = Bundle.main.path(forResource: "LICENSE", ofType: ""),
+       let content = try? String(contentsOfFile: licensePath, encoding: .utf8) {
+        return content
+    }
+    return "License information not available"
+  }()
 
   private func formatDuration(_ milliseconds: Int32) -> String {
     let totalSeconds = milliseconds / 1000
@@ -130,6 +138,9 @@ struct HomeView: View {
             Button(action: export) {
               Label("Export to CSV", systemImage: "square.and.arrow.up")
             }
+            Button(action: { showingLicense.toggle() }) {
+              Label("View License", systemImage: "doc.text")
+            }
           } label: {
             Image(systemName: "line.horizontal.3")
           }
@@ -143,6 +154,23 @@ struct HomeView: View {
         categories = DatabaseHelper.shared.fetchCategories()
       }
       .navigationBarTitleDisplayMode(.inline)
+    }
+    .sheet(isPresented: $showingLicense) {
+      NavigationView {
+        ScrollView {
+          Text(licenseText)
+            .padding()
+        }
+        .navigationTitle("License")
+        .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+          ToolbarItem(placement: .topBarTrailing) {
+            Button("Done") {
+              showingLicense = false
+            }
+          }
+        }
+      }
     }
   }
 
