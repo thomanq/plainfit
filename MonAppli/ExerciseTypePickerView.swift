@@ -3,12 +3,13 @@ import SwiftUI
 struct ExerciseTypePickerView: View {
   let category: Category
   @Binding var showCategoryPicker: Bool
-  @State private var selectedDate: Date = Date()
+  @State private var selectedDate: Date
   @State private var exerciseTypes: [ExerciseType] = []
   @State private var showingAddSheet = false
 
-  init(category: Category,  showCategoryPicker: Binding<Bool>) {
+  init(category: Category,  selectedDate: Date, showCategoryPicker: Binding<Bool>) {
     self.category = category
+    self.selectedDate = selectedDate
     _showCategoryPicker = showCategoryPicker
   }
 
