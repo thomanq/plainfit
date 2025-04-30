@@ -40,7 +40,7 @@ struct ExerciseTypePickerView: View {
         exerciseTypes = DatabaseHelper.shared.getExerciseTypesForCategory(categoryId: category.id)
       }
     ) {
-      AddExerciseTypeSheet(isPresented: $showingAddSheet)
+      AddExerciseTypeSheet(isPresented: $showingAddSheet, defaultCategoryId: category.id)
     }
   }
 }

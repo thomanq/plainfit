@@ -15,6 +15,11 @@ struct AddExerciseTypeSheet: View {
     
     private let availableTypes = ["weight", "reps", "distance", "time"]
     
+    init(isPresented: Binding<Bool>, defaultCategoryId: Int32? = nil) {
+        _isPresented = isPresented
+        _selectedCategoryId = State(initialValue: defaultCategoryId)
+    }
+    
     var body: some View {
         NavigationView {
             Form {
