@@ -397,4 +397,49 @@ class DatabaseHelper {
         sqlite3_finalize(queryStatement)
         return exerciseTypes
     }
+
+    func exportToCSV() -> String {
+        var csvString = "ID,Exercise Name,Duration,Date,Sets,Reps,Distance,Distance Unit,Weight,Weight Unit\n"
+        let query = "SELECT * FROM fitness_entries ORDER BY date DESC"
+        var queryStatement: OpaquePointer?
+        
+        if sqlite3_prepare_v2(db, query, -1, &queryStatement, nil) == SQLITE_OK {
+            while sqlite3_step(queryStatement) == SQLITE_ROW {
+                let id = sqlite3_column_int(queryStatement, 0)
+                let exerciseName = String(cString: sqlite3_column_text(queryStatement, 1))
+                let duration = sqlite3_column_int(queryStatement, 2)
+                let timestamp = sqlite3_column_int(queryStatement, 3)
+                let sets = sqlite3_column_int(queryStatement, 4)
+                let reps = sqlite3_column_int(queryStatement, 5)
+                
+                let date = Date(timeIntervalSince1970: TimeInterval(timestamp))
+                let dateFormatter = DateFormatter()
+                dateFormatter.dateFormat = "yyyy-MM-dd HH:mm:ss"
+                let dateString = dateFormatter.string(from: date)
+                
+                var distance = "N/A"
+                var distanceUnit = "N/A"
+                var weight = "N/A"
+                var weightUnit = "N/A"
+                
+                if sqlite3_column_type(queryStatement, 6) != SQLITE_NULL {
+                    distance = String(Float(sqlite3_column_double(queryStatement, 6)))
+                }
+                if sqlite3_column_type(queryStatement, 7) != SQLITE_NULL {
+                    distanceUnit = String(cString: sqlite3_column_text(queryStatement, 7))
+                }
+                if sqlite3_column_type(queryStatement, 8) != SQLITE_NULL {
+                    weight = String(Float(sqlite3_column_double(queryStatement, 8)))
+                }
+                if sqlite3_column_type(queryStatement, 9) != SQLITE_NULL {
+                    weightUnit = String(cString: sqlite3_column_text(queryStatement, 9))
+                }
+                
+                let row = "\(id),\"\(exerciseName)\",\(duration),\"\(dateString)\",\(sets),\(reps),\(distance),\(distanceUnit),\(weight),\(weightUnit)\n"
+                csvString.append(row)
+            }
+        }
+        sqlite3_finalize(queryStatement)
+        return csvString
+    }
 }
