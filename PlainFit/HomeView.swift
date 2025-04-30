@@ -27,6 +27,7 @@ struct HomeView: View {
     }
     return "License information not available"
   }()
+  @State private var showingCalendar = false
 
   private func formatDuration(_ milliseconds: Int32) -> String {
     let totalSeconds = milliseconds / 1000
@@ -64,6 +65,13 @@ struct HomeView: View {
               }
 
               Spacer()
+
+              Button(action: {
+                showingCalendar = true
+              }) {
+                Image(systemName: "calendar")
+              }
+              .padding(.trailing, 8)
 
               Text(currentDate.formatted(date: .abbreviated, time: .omitted))
                 .font(.headline)
@@ -154,6 +162,9 @@ struct HomeView: View {
         categories = DatabaseHelper.shared.fetchCategories()
       }
       .navigationBarTitleDisplayMode(.inline)
+    }
+    .sheet(isPresented: $showingCalendar) {
+      CalendarView(selectedDate: $currentDate)
     }
     .sheet(isPresented: $showingLicense) {
       NavigationView {
