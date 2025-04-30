@@ -1,13 +1,13 @@
 //
-//  MonAppliUITests.swift
-//  MonAppliUITests
+//  PlainFitUITests.swift
+//  PlainFitUITests
 //
 //  Created by Thomas on 27/04/2025.
 //
 
 import XCTest
 
-final class MonAppliUITests: XCTestCase {
+final class PlainFitUITests: XCTestCase {
 
     override func setUpWithError() throws {
         // Put setup code here. This method is called before the invocation of each test method in the class.
