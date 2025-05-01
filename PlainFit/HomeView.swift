@@ -19,15 +19,8 @@ struct HomeView: View {
   @State private var showingCategorySheet = false
   @State private var newCategoryName = ""
   @State private var showCategoryPicker : Bool = false
-  @State private var showingLicense = false
-  @State private var licenseText: String = {
-    if let licensePath = Bundle.main.path(forResource: "LICENSE", ofType: ""),
-       let content = try? String(contentsOfFile: licensePath, encoding: .utf8) {
-        return content
-    }
-    return "License information not available"
-  }()
   @State private var showingCalendar = false
+  @State private var showingSettings = false
 
   private func formatDuration(_ milliseconds: Int32) -> String {
     let totalSeconds = milliseconds / 1000
@@ -143,11 +136,11 @@ struct HomeView: View {
 
         ToolbarItem(placement: .topBarTrailing) {
           Menu {
+            Button(action: { showingSettings = true }) {
+              Label("Settings", systemImage: "gear")
+            }
             Button(action: export) {
               Label("Export to CSV", systemImage: "square.and.arrow.up")
-            }
-            Button(action: { showingLicense.toggle() }) {
-              Label("View License", systemImage: "doc.text")
             }
           } label: {
             Image(systemName: "line.horizontal.3")
@@ -166,21 +159,9 @@ struct HomeView: View {
     .sheet(isPresented: $showingCalendar) {
       CalendarView(selectedDate: $currentDate)
     }
-    .sheet(isPresented: $showingLicense) {
+    .sheet(isPresented: $showingSettings) {
       NavigationView {
-        ScrollView {
-          Text(licenseText)
-            .padding()
-        }
-        .navigationTitle("License")
-        .navigationBarTitleDisplayMode(.inline)
-        .toolbar {
-          ToolbarItem(placement: .topBarTrailing) {
-            Button("Done") {
-              showingLicense = false
-            }
-          }
-        }
+        SettingsView()
       }
     }
   }
