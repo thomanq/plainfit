@@ -4,22 +4,57 @@
       "Abs": {
         "Crunches": "weight,reps",
         "Plank": "weight,time",
-        "Chin Up": "weight,time"
+        "Russian Twists": "weight,reps",
+        "Leg Raises": "weight,reps",
+        "Bicycle Crunches": "weight,reps",
+        "Sit-ups": "weight,reps",
+        "Hanging Leg Raises": "weight,reps",
+        "Mountain Climbers": "reps,time",
+        "V-Ups": "weight,reps",
+        "Toe Touches": "weight,reps"
       }
     },
     {
       "Legs": {
-        "Leg Press": "weight,reps"
+        "Leg Press": "weight,reps",
+        "Squats": "weight,reps",
+        "Lunges": "weight,reps",
+        "Calf Raises": "weight,reps",
+        "Step-ups": "weight,reps",
+        "Glute Bridge": "weight,reps",
+        "Wall Sit": "weight,time",
+        "Bulgarian Split Squats": "weight,reps",
+        "Sumo Squats": "weight,reps",
+        "Hip Thrusts": "weight,reps"
       }
     },
     {
       "Back": {
-        "Deadlift": "weight,reps"
+        "Deadlift": "weight,reps",
+        "Chin Up": "weight,time",
+        "Pull-up": "weight,reps",
+        "Bent-over Rows": "weight,reps",
+        "Lat Pulldown": "weight,reps",
+        "T-Bar Row": "weight,reps",
+        "Seated Cable Row": "weight,reps",
+        "Good Mornings": "weight,reps",
+        "Inverted Row": "weight,reps"
       }
     },
     {
       "Strength": {
-        "Push-up": "weight,reps"
+        "Push-up": "weight,reps",
+        "Bench Press": "weight,reps",
+        "Shoulder Press": "weight,reps",
+        "Bicep Curls": "weight,reps",
+        "Tricep Dips": "weight,reps",
+        "Incline Bench Press": "weight,reps",
+        "Dumbbell Flyes": "weight,reps",
+        "Arnold Press": "weight,reps",
+        "Skull Crushers": "weight,reps",
+        "Hammer Curls": "weight,reps",
+        "Cable Lateral Raises": "weight,reps",
+        "Front Raise": "weight,reps"
       }
     },
     {
@@ -29,7 +64,66 @@
         "Cycling": "distance,time",
         "Swimming": "distance,time",
         "Rowing": "distance,time",
-        "Jump Rope": "reps,time"
+        "Jump Rope": "reps,time",
+        "Jumping Jacks": "reps,time",
+        "Burpees": "reps,time",
+        "Mountain Climbers": "reps,time",
+        "Elliptical": "distance,time",
+        "Stair Climber": "distance,time",
+        "High Knees": "reps,time",
+        "Shadow Boxing": "reps,time"
+      }
+    },
+    {
+      "Chest": {
+        "Push-up": "weight,reps",
+        "Bench Press": "weight,reps",
+        "Incline Bench Press": "weight,reps",
+        "Dumbbell Flyes": "weight,reps",
+        "Chest Dips": "weight,reps",
+        "Cable Crossover": "weight,reps"
+      }
+    },
+    {
+      "Shoulders": {
+        "Shoulder Press": "weight,reps",
+        "Arnold Press": "weight,reps",
+        "Lateral Raises": "weight,reps",
+        "Front Raise": "weight,reps",
+        "Rear Delt Flyes": "weight,reps",
+        "Upright Row": "weight,reps"
+      }
+    },
+    {
+      "Arms": {
+        "Bicep Curls": "weight,reps",
+        "Hammer Curls": "weight,reps",
+        "Skull Crushers": "weight,reps",
+        "Tricep Dips": "weight,reps",
+        "Concentration Curls": "weight,reps",
+        "Cable Tricep Pushdowns": "weight,reps"
+      }
+    },
+    {
+      "Mobility & Stretching": {
+        "Forward Fold": "time",
+        "Cat-Cow Stretch": "reps,time",
+        "Child's Pose": "time",
+        "Hip Flexor Stretch": "time",
+        "Hamstring Stretch": "time",
+        "Spinal Twist": "time",
+        "Shoulder Stretch": "time"
+      }
+    },
+    {
+      "Bodyweight": {
+        "Push-up": "reps,time",
+        "Pull-up": "reps,time",
+        "Air Squat": "reps,time",
+        "Lunge": "reps,time",
+        "Plank": "time",
+        "Burpees": "reps,time",
+        "Wall Sit": "time"
       }
     }
   ]
