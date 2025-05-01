@@ -1,0 +1,36 @@
+{
+  "exercises": [
+    {
+      "Abs": {
+        "Crunches": "weight,reps",
+        "Plank": "weight,time",
+        "Chin Up": "weight,time"
+      }
+    },
+    {
+      "Legs": {
+        "Leg Press": "weight,reps"
+      }
+    },
+    {
+      "Back": {
+        "Deadlift": "weight,reps"
+      }
+    },
+    {
+      "Strength": {
+        "Push-up": "weight,reps"
+      }
+    },
+    {
+      "Cardio": {
+        "Running (Outdoor)": "distance,time",
+        "Running (Treadmill)": "distance,time",
+        "Cycling": "distance,time",
+        "Swimming": "distance,time",
+        "Rowing": "distance,time",
+        "Jump Rope": "reps,time"
+      }
+    }
+  ]
+}

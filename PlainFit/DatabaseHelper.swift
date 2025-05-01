@@ -1,6 +1,17 @@
 import Foundation
 import SQLite3
 
+
+typealias CategoryName = String
+typealias ExerciseTypeName = String
+typealias ExerciseAttributes = String
+typealias ExerciseDetails = [ExerciseTypeName: ExerciseAttributes]
+typealias ExerciseCategory = [CategoryName: ExerciseDetails]
+
+struct ExercisesData: Codable {
+    let exercises: [ExerciseCategory]
+}
+
 struct Category: Identifiable {
     let id: Int32
     let name: String
@@ -106,21 +117,47 @@ class DatabaseHelper {
                     print("Error creating exercise_type_categories table")
                 }
                 
-                // Insert a test category if none exist
-                let checkCategoriesQuery = "SELECT COUNT(*) FROM categories"
-                var queryStatement: OpaquePointer?
-                if sqlite3_prepare_v2(db, checkCategoriesQuery, -1, &queryStatement, nil) == SQLITE_OK {
-                    if sqlite3_step(queryStatement) == SQLITE_ROW {
-                        let count = sqlite3_column_int(queryStatement, 0)
-                        if count == 0 {
-                            _ = insertCategory(name: "Cardio")
-                            _ = insertCategory(name: "Strength")
-                            _ = insertCategory(name: "Flexibility")
+                // Insert categories from exercises.json if none exist
+                let existingCategories = fetchCategories()
+                let existingExerciseTypes = fetchExerciseTypes()
+                
+                if let exercises = loadExercisesFromJSON() {
+                    for exerciseCategory in exercises.exercises {
+                        for (categoryName, exerciseTypes) in exerciseCategory {
+                            let categoryId = if !existingCategories.contains(where: { $0.name == categoryName }) {
+                                insertCategory(name: categoryName)
+                            } else {
+                                existingCategories.first(where: { $0.name == categoryName })?.id
+                            }
+                            
+                            if let categoryId = categoryId {
+                                for (exerciseName, attributes) in exerciseTypes {
+                                    if !existingExerciseTypes.contains(where: { $0.name == exerciseName }) {
+                                        if let exerciseTypeId = insertExerciseType(name: exerciseName, type: attributes) {
+                                            _ = linkExerciseTypeToCategory(exerciseTypeId: exerciseTypeId, categoryId: categoryId)
+                                        }
+                                    }
+                                }
+                            }
                         }
                     }
                 }
-                sqlite3_finalize(queryStatement)
             }
+        }
+    }
+
+    private func loadExercisesFromJSON() -> ExercisesData? {
+        guard let jsonPath = Bundle.main.path(forResource: "exercises", ofType: "json"),
+              let jsonContent = try? String(contentsOfFile: jsonPath, encoding: .utf8),
+              let jsonData = jsonContent.data(using: .utf8) else {
+            return nil
+        }
+        
+        do {
+            return try JSONDecoder().decode(ExercisesData.self, from: jsonData)
+        } catch {
+            print("Error decoding JSON: \(error)")
+            return nil
         }
     }
 
