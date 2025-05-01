@@ -10,29 +10,38 @@ struct AddExerciseEntryView: View {
     @State private var hours: String = ""
     @State private var minutes: String = ""
     @State private var seconds: String = ""
-    @State private var sets: String = ""
     @State private var reps: String = ""
     @State private var distance: String = ""
     @State private var distanceUnit: String = ""
     @State private var weight: String = ""
     @State private var weightUnit: String = ""
 
-    private let units = ["km", "m", "mi"]
-    private let weightUnits = ["kg", "lbs"]
+    private var distanceUnits: [String] = []
+    private var weightUnits: [String] = []
 
     init(exerciseType: ExerciseType, selectedDate: Date, showCategoryPicker: Binding<Bool>) {
         self.exerciseType = exerciseType
         _showCategoryPicker = showCategoryPicker
+
         _exerciseDate = State(initialValue: selectedDate)
         _distanceUnit = State(initialValue: unitSystem == .imperial ? "mi" : "km")
         _weightUnit = State(initialValue: unitSystem == .imperial ? "lbs" : "kg")
+
+        if unitSystem == .imperial {
+            distanceUnits = ["mi"]
+            weightUnits = ["lbs"]
+        } else {
+            distanceUnits = ["km", "m"]
+            weightUnits = ["kg"]
+        }
     }
 
     var body: some View {
         Form {
-            Section(header: Text("Exercise Details")) {
-                TextField("Exercise Name", text: .constant(exerciseType.name))
-                    .disabled(true)
+            TextField("Exercise Name", text: .constant(exerciseType.name))
+                .disabled(true)
+            DatePicker("Date and Time", selection: $exerciseDate)
+            Section(header: Text("Duration")) {
                 HStack {
                     TextField("HH", text: $hours)
                         .keyboardType(.numberPad)
@@ -46,39 +55,34 @@ struct AddExerciseEntryView: View {
                         .keyboardType(.numberPad)
                         .frame(maxWidth: 50)
                 }
-                DatePicker("Date and Time", selection: $exerciseDate)
             }
 
-            Section(header: Text("Sets and Reps")) {
-                TextField("Sets", text: $sets)
-                    .keyboardType(.numberPad)
+            Section(header: Text("Reps")) {
                 TextField("Reps", text: $reps)
                     .keyboardType(.numberPad)
             }
 
-            Section(header: Text("Distance (Optional)")) {
+            Section(header: Text("Distance")) {
                 HStack {
                     TextField("Distance", text: $distance)
                         .keyboardType(.decimalPad)
-                    Picker("Unit", selection: $distanceUnit) {
-                        ForEach(units, id: \.self) {
+                    Picker("", selection: $distanceUnit) {
+                        ForEach(distanceUnits, id: \.self) {
                             Text($0)
                         }
                     }
-                    .pickerStyle(SegmentedPickerStyle())
                 }
             }
 
-            Section(header: Text("Weight (Optional)")) {
+            Section(header: Text("Weight")) {
                 HStack {
                     TextField("Weight", text: $weight)
                         .keyboardType(.decimalPad)
-                    Picker("Unit", selection: $weightUnit) {
+                    Picker("", selection: $weightUnit) {
                         ForEach(weightUnits, id: \.self) {
                             Text($0)
                         }
                     }
-                    .pickerStyle(SegmentedPickerStyle())
                 }
             }
 
@@ -105,7 +109,7 @@ struct AddExerciseEntryView: View {
             exerciseName: exerciseType.name,
             duration: totalDurationMs,
             date: exerciseDate,
-            sets: Int32(sets) ?? 0,
+            sets: 0,
             reps: Int32(reps) ?? 0,
             distance: distanceValue,
             distanceUnit: !distance.isEmpty ? distanceUnit : nil,
