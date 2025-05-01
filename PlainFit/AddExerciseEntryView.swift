@@ -10,6 +10,7 @@ struct AddExerciseEntryView: View {
     @State private var hours: String = ""
     @State private var minutes: String = ""
     @State private var seconds: String = ""
+    @State private var milliseconds: String = ""
     @State private var reps: String = ""
     @State private var distance: String = ""
     @State private var distanceUnit: String = ""
@@ -41,46 +42,69 @@ struct AddExerciseEntryView: View {
             TextField("Exercise Name", text: .constant(exerciseType.name))
                 .disabled(true)
             DatePicker("Date and Time", selection: $exerciseDate)
-            Section(header: Text("Duration")) {
-                HStack {
-                    TextField("HH", text: $hours)
-                        .keyboardType(.numberPad)
-                        .frame(maxWidth: 50)
-                    Text(":")
-                    TextField("MM", text: $minutes)
-                        .keyboardType(.numberPad)
-                        .frame(maxWidth: 50)
-                    Text(":")
-                    TextField("SS", text: $seconds)
-                        .keyboardType(.numberPad)
-                        .frame(maxWidth: 50)
+            
+            if exerciseType.type.contains("time") {
+                Section(header: Text("Duration")) {
+                    HStack {
+                        TextField("HH", text: $hours)
+                            .keyboardType(.numberPad)
+                            .frame(maxWidth: 50)
+                        Text(":")
+                        TextField("MM", text: $minutes)
+                            .keyboardType(.numberPad)
+                            .frame(maxWidth: 50)
+                        Text(":")
+                        TextField("SS", text: $seconds)
+                            .keyboardType(.numberPad)
+                            .frame(maxWidth: 50)
+                        Text(":")
+                        TextField("MS", text: $milliseconds)
+                            .keyboardType(.numberPad)
+                            .frame(maxWidth: 50)
+                    }
                 }
             }
 
-            Section(header: Text("Reps")) {
-                TextField("Reps", text: $reps)
-                    .keyboardType(.numberPad)
+            if exerciseType.type.contains("reps") {
+                Section(header: Text("Reps")) {
+                    TextField("Reps", text: $reps)
+                        .keyboardType(.numberPad)
+                }
             }
 
-            Section(header: Text("Distance")) {
-                HStack {
-                    TextField("Distance", text: $distance)
-                        .keyboardType(.decimalPad)
-                    Picker("", selection: $distanceUnit) {
-                        ForEach(distanceUnits, id: \.self) {
-                            Text($0)
+            if exerciseType.type.contains("distance") {
+                Section(header: Text("Distance")) {
+                    HStack {
+                        TextField("Distance", text: $distance)
+                            .keyboardType(.decimalPad)
+                        if distanceUnits.count > 1 {
+                            Picker("", selection: $distanceUnit) {
+                                ForEach(distanceUnits, id: \.self) {
+                                    Text($0)
+                                }
+                            }
+                        } else {
+                            Text(distanceUnit)
+                                .foregroundColor(.gray)
                         }
                     }
                 }
             }
 
-            Section(header: Text("Weight")) {
-                HStack {
-                    TextField("Weight", text: $weight)
-                        .keyboardType(.decimalPad)
-                    Picker("", selection: $weightUnit) {
-                        ForEach(weightUnits, id: \.self) {
-                            Text($0)
+            if exerciseType.type.contains("weight") {
+                Section(header: Text("Weight")) {
+                    HStack {
+                        TextField("Weight", text: $weight)
+                            .keyboardType(.decimalPad)
+                        if weightUnits.count > 1 {
+                            Picker("", selection: $weightUnit) {
+                                ForEach(weightUnits, id: \.self) {
+                                    Text($0)
+                                }
+                            }
+                        } else {
+                            Text(weightUnit)
+                                .foregroundColor(.gray)
                         }
                     }
                 }
@@ -96,11 +120,12 @@ struct AddExerciseEntryView: View {
     private func saveExercise() {
         guard !exerciseType.name.isEmpty else { return }
 
-        // Convert HH:MM:SS to milliseconds
+        // Convert HH:MM:SS:MS to milliseconds
         let hoursMs = (Int32(hours) ?? 0) * 3_600_000
         let minutesMs = (Int32(minutes) ?? 0) * 60000
         let secondsMs = (Int32(seconds) ?? 0) * 1000
-        let totalDurationMs = hoursMs + minutesMs + secondsMs
+        let ms = Int32(milliseconds) ?? 0
+        let totalDurationMs = hoursMs + minutesMs + secondsMs + ms
 
         let distanceValue = Float(distance)
         let weightValue = Float(weight)
