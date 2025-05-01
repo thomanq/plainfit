@@ -5,6 +5,7 @@ struct CalendarView: View {
     @Binding var selectedDate: Date
     @State private var months: [Date] = []
     @State private var scrollOffset: CGFloat = 0
+    @AppStorage("weekStart") private var weekStart = WeekStart.sunday
 
     private let calendar = Calendar.current
     private let monthFormatter: DateFormatter = {
@@ -38,26 +39,42 @@ struct CalendarView: View {
         }
     }
 
+    func weekDays() -> [String] {
+        let days = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]
+        switch weekStart {
+        case .sunday:
+            return days
+        case .monday:
+            return Array(days[1...]) + [days[0]]
+        case .saturday:
+            return [days.last!] + Array(days[..<6])
+        }
+    }
+
     var body: some View {
         NavigationView {
             ScrollViewReader { proxy in
                 ScrollView(.vertical, showsIndicators: false) {
                     LazyVStack(spacing: 20) {
                         ForEach(months, id: \.self) { month in
-                            MonthView(month: month, selectedDate: $selectedDate)
-                                .id(monthFormatter.string(from: month))
-                                .onAppear {
-                                    if month == months.last {
-                                        loadMoreMonths(direction: .down)
-                                    } else if month == months.first {
-                                        loadMoreMonths(direction: .up)
-                                    }
+                            MonthView(
+                                month: month, selectedDate: $selectedDate, weekStart: weekStart
+                            )
+                            .id(monthFormatter.string(from: month))
+                            .onAppear {
+                                if month == months.last {
+                                    loadMoreMonths(direction: .down)
+                                } else if month == months.first {
+                                    loadMoreMonths(direction: .up)
                                 }
+                            }
                         }
                     }
                 }
                 .onAppear {
-                    if let scrollToDate = calendar.date(byAdding: .month, value: 2, to: selectedDate) {
+                    if let scrollToDate = calendar.date(
+                        byAdding: .month, value: 2, to: selectedDate)
+                    {
                         proxy.scrollTo(monthFormatter.string(from: scrollToDate), anchor: .center)
                     }
                 }
@@ -77,6 +94,7 @@ private enum ScrollDirection {
 struct MonthView: View {
     let month: Date
     @Binding var selectedDate: Date
+    let weekStart: WeekStart
 
     private let calendar = Calendar.current
     private let cellWidth: CGFloat = 40
@@ -88,28 +106,37 @@ struct MonthView: View {
 
     private func weeksForMonth(date: Date) -> [[Date]] {
         var weeks: [[Date]] = []
-        let range = calendar.range(of: .day, in: .month, for: date)!
-        let monthStart = calendar.date(
-            from: calendar.dateComponents([.year, .month], from: date))!
+        let monthStart = calendar.date(from: calendar.dateComponents([.year, .month], from: date))!
+
+        let weekday = calendar.component(.weekday, from: monthStart) - 1
+        // Sunday = 0, Monday = 1, Tuesday = 2, Wednesday = 3, Thursday = 4, Friday = 5, Saturday = 6
+        let daysToSubtract: Int
         
-        let weekday = calendar.component(.weekday, from: monthStart)
-        let daysToSubtract = weekday - 1
+        switch weekStart {
+        case .saturday:
+            daysToSubtract = weekday + 1
+        case .sunday:
+            daysToSubtract = weekday
+        case .monday:
+            daysToSubtract = weekday == 0 ? 6 : weekday - 1
+        }
+
         let startDate = calendar.date(byAdding: .day, value: -daysToSubtract, to: monthStart)!
-        
+
         var week: [Date] = []
         var currentDate = startDate
-        
+
         while weeks.count < 6 {
             week.append(currentDate)
-            
+
             if week.count == 7 {
                 weeks.append(week)
                 week = []
             }
-            
+
             currentDate = calendar.date(byAdding: .day, value: 1, to: currentDate)!
         }
-        
+
         return weeks
     }
 
@@ -120,16 +147,14 @@ struct MonthView: View {
                 .bold()
                 .padding(.top)
 
-            // Week day header
             HStack {
-                ForEach(["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"], id: \.self) { day in
+                ForEach(CalendarView(selectedDate: $selectedDate).weekDays(), id: \.self) { day in
                     Text(day)
                         .frame(width: cellWidth)
                 }
             }
             .padding(.horizontal)
 
-            // Calendar grid
             VStack {
                 ForEach(weeksForMonth(date: month), id: \.self) { week in
                     HStack {
