@@ -145,7 +145,7 @@ struct MonthView: View {
             Text(monthFormatter.string(from: month))
                 .font(.title2)
                 .bold()
-                .padding(.top)
+                .padding(.vertical, 8)
 
             HStack {
                 ForEach(CalendarView(selectedDate: $selectedDate).weekDays(), id: \.self) { day in
@@ -195,13 +195,13 @@ struct DayCell: View {
 
     var body: some View {
         Text(dayFormatter.string(from: date))
-            .frame(width: cellWidth)
-            .aspectRatio(1, contentMode: .fit)
+            .frame(width: cellWidth, height: cellWidth - 10)
             .foregroundColor(isCurrentMonth ? .primary : .gray.opacity(0.5))
             .clipShape(Circle())
             .overlay(
                 Circle()
-                    .stroke(isSelected && isCurrentMonth ? Color.blue : Color.clear, lineWidth: 2)
+                    .stroke(isSelected && isCurrentMonth ? Color.blue : Color.clear, lineWidth: 3)
             )
+            .padding(.vertical, 4)
     }
 }
