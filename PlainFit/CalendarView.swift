@@ -1,144 +1,182 @@
 import SwiftUI
 
 struct CalendarView: View {
-  @Environment(\.dismiss) var dismiss
-  @Binding var selectedDate: Date
-  @State private var currentMonth: Date = Date()
-  @State private var currentScrollMonth: Date = Date()
+    @Environment(\.dismiss) var dismiss
+    @Binding var selectedDate: Date
+    @State private var months: [Date] = []
+    @State private var scrollOffset: CGFloat = 0
 
-  private let calendar = Calendar.current
-  private let cellWidth: CGFloat = 40
+    private let calendar = Calendar.current
+    private let monthFormatter: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "MMMM yyyy"
+        return formatter
+    }()
 
-  private let monthFormatter: DateFormatter = {
-    let formatter = DateFormatter()
-    formatter.dateFormat = "MMMM yyyy"
-    return formatter
-  }()
-
-  private func monthsArray() -> [Date] {
-    (-12...12).compactMap { offset in
-      calendar.date(byAdding: .month, value: offset, to: Date())
-    }
-  }
-
-  private func weeksForMonth(date: Date) -> [[Date]] {
-    let monthInterval = calendar.dateInterval(of: .month, for: date)!
-    let firstDateOfMonth = monthInterval.start
-
-    var weekStart = calendar.date(
-      from:
-        calendar.dateComponents([.yearForWeekOfYear, .weekOfYear], from: firstDateOfMonth))!
-
-    if weekStart > firstDateOfMonth {
-      weekStart = calendar.date(byAdding: .day, value: -7, to: weekStart)!
+    init(selectedDate: Binding<Date>) {
+        self._selectedDate = selectedDate
+        let initialMonths = (-2...2).compactMap { offset in
+            calendar.date(byAdding: .month, value: offset, to: selectedDate.wrappedValue)
+        }
+        _months = State(initialValue: initialMonths)
     }
 
-    var weeks: [[Date]] = []
-    var currentDate = weekStart
-
-    for _ in 0..<6 {
-      var week: [Date] = []
-      for _ in 0..<7 {
-        week.append(currentDate)
-        currentDate = calendar.date(byAdding: .day, value: 1, to: currentDate)!
-      }
-      weeks.append(week)
-    }
-
-    return weeks
-  }
-
-  var body: some View {
-    NavigationView {
-      ScrollViewReader { proxy in
-        ScrollView(.vertical, showsIndicators: false) {
-          LazyVStack(spacing: 20) {
-            ForEach(monthsArray(), id: \.self) { month in
-              VStack {
-                Text(monthFormatter.string(from: month))
-                  .font(.title2)
-                  .bold()
-                  .padding(.top)
-
-                // Week day header
-                HStack {
-                  ForEach(["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"], id: \.self) { day in
-                    Text(day)
-                      .frame(width: cellWidth)
-                      .foregroundColor(day == "Mon" ? .red : .primary)
-                  }
-                }
-                .padding(.horizontal)
-
-                // Calendar grid
-                VStack {
-                  ForEach(weeksForMonth(date: month), id: \.self) { week in
-                    HStack {
-                      ForEach(week, id: \.self) { date in
-                        DayCell(
-                          date: date,
-                          isSelected: calendar.isDate(date, inSameDayAs: selectedDate),
-                          isMonday: calendar.component(.weekday, from: date) == 2,
-                          isCurrentMonth: calendar.isDate(
-                            date, equalTo: month, toGranularity: .month),
-                          cellWidth: cellWidth
-                        )
-                        .onTapGesture {
-                          selectedDate = date
-                        }
-                      }
-                    }
-                  }
-                }
-                .padding()
-              }
-              .id(monthFormatter.string(from: month))
+    private func loadMoreMonths(direction: ScrollDirection) {
+        switch direction {
+        case .up:
+            guard let firstMonth = months.first else { return }
+            let newMonths = (-2...(-1)).compactMap { offset in
+                calendar.date(byAdding: .month, value: offset, to: firstMonth)
             }
-          }
+            months.insert(contentsOf: newMonths, at: 0)
+        case .down:
+            guard let lastMonth = months.last else { return }
+            let newMonths = (1...2).compactMap { offset in
+                calendar.date(byAdding: .month, value: offset, to: lastMonth)
+            }
+            months.append(contentsOf: newMonths)
         }
-        .onAppear {
-          withAnimation {
-            proxy.scrollTo(monthFormatter.string(from: selectedDate), anchor: .center)
-          }
-        }
-      }
-      .navigationTitle("Calendar")
-      .navigationBarTitleDisplayMode(.inline)
-      .toolbar {
-        ToolbarItem(placement: .topBarTrailing) {
-          Button("Done") {
-            dismiss()
-          }
-        }
-      }
     }
-  }
+
+    var body: some View {
+        NavigationView {
+            ScrollViewReader { proxy in
+                ScrollView(.vertical, showsIndicators: false) {
+                    LazyVStack(spacing: 20) {
+                        ForEach(months, id: \.self) { month in
+                            MonthView(month: month, selectedDate: $selectedDate)
+                                .id(monthFormatter.string(from: month))
+                                .onAppear {
+                                    if month == months.last {
+                                        loadMoreMonths(direction: .down)
+                                    } else if month == months.first {
+                                        loadMoreMonths(direction: .up)
+                                    }
+                                }
+                        }
+                    }
+                }
+                .onAppear {
+                    if let scrollToDate = calendar.date(byAdding: .month, value: 2, to: selectedDate) {
+                        proxy.scrollTo(monthFormatter.string(from: scrollToDate), anchor: .center)
+                    }
+                }
+                .navigationBarItems(
+                    trailing: Button("Done") {
+                        dismiss()
+                    })
+            }
+        }
+    }
+}
+
+private enum ScrollDirection {
+    case up, down
+}
+
+struct MonthView: View {
+    let month: Date
+    @Binding var selectedDate: Date
+
+    private let calendar = Calendar.current
+    private let cellWidth: CGFloat = 40
+    private let monthFormatter: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "MMMM yyyy"
+        return formatter
+    }()
+
+    private func weeksForMonth(date: Date) -> [[Date]] {
+        var weeks: [[Date]] = []
+        let range = calendar.range(of: .day, in: .month, for: date)!
+        let monthStart = calendar.date(
+            from: calendar.dateComponents([.year, .month], from: date))!
+        
+        let weekday = calendar.component(.weekday, from: monthStart)
+        let daysToSubtract = weekday - 1
+        let startDate = calendar.date(byAdding: .day, value: -daysToSubtract, to: monthStart)!
+        
+        var week: [Date] = []
+        var currentDate = startDate
+        
+        while weeks.count < 6 {
+            week.append(currentDate)
+            
+            if week.count == 7 {
+                weeks.append(week)
+                week = []
+            }
+            
+            currentDate = calendar.date(byAdding: .day, value: 1, to: currentDate)!
+        }
+        
+        return weeks
+    }
+
+    var body: some View {
+        VStack {
+            Text(monthFormatter.string(from: month))
+                .font(.title2)
+                .bold()
+                .padding(.top)
+
+            // Week day header
+            HStack {
+                ForEach(["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"], id: \.self) { day in
+                    Text(day)
+                        .frame(width: cellWidth)
+                }
+            }
+            .padding(.horizontal)
+
+            // Calendar grid
+            VStack {
+                ForEach(weeksForMonth(date: month), id: \.self) { week in
+                    HStack {
+                        ForEach(week, id: \.self) { date in
+                            DayCell(
+                                date: date,
+                                isSelected: calendar.isDate(date, inSameDayAs: selectedDate),
+                                isMonday: calendar.component(.weekday, from: date) == 2,
+                                isCurrentMonth: calendar.isDate(
+                                    date, equalTo: month, toGranularity: .month),
+                                cellWidth: cellWidth
+                            )
+                            .onTapGesture {
+                                selectedDate = date
+                            }
+                        }
+                    }
+                }
+            }
+            .padding()
+        }
+    }
 }
 
 struct DayCell: View {
-  let date: Date
-  let isSelected: Bool
-  let isMonday: Bool
-  let isCurrentMonth: Bool
-  let cellWidth: CGFloat
+    let date: Date
+    let isSelected: Bool
+    let isMonday: Bool
+    let isCurrentMonth: Bool
+    let cellWidth: CGFloat
 
-  private let calendar = Calendar.current
-  private let dayFormatter: DateFormatter = {
-    let formatter = DateFormatter()
-    formatter.dateFormat = "d"
-    return formatter
-  }()
+    private let calendar = Calendar.current
+    private let dayFormatter: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "d"
+        return formatter
+    }()
 
-  var body: some View {
-    Text(dayFormatter.string(from: date))
-      .frame(width: cellWidth)
-      .aspectRatio(1, contentMode: .fit)
-      .foregroundColor(isCurrentMonth ? .primary : .gray.opacity(0.5))
-      .background(isMonday && isCurrentMonth ? Color.red.opacity(0.3) : Color.clear)
-      .clipShape(Circle())
-      .overlay(
-        Circle()
-          .stroke(isSelected && isCurrentMonth ? Color.blue : Color.clear, lineWidth: 2)
-      )
-  }
+    var body: some View {
+        Text(dayFormatter.string(from: date))
+            .frame(width: cellWidth)
+            .aspectRatio(1, contentMode: .fit)
+            .foregroundColor(isCurrentMonth ? .primary : .gray.opacity(0.5))
+            .clipShape(Circle())
+            .overlay(
+                Circle()
+                    .stroke(isSelected && isCurrentMonth ? Color.blue : Color.clear, lineWidth: 2)
+            )
+    }
 }
