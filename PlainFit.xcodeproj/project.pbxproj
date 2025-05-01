@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		E27491272DC3CBB500E398AC /* exercises.json in Resources */ = {isa = PBXBuildFile; fileRef = E27491262DC3CBB500E398AC /* exercises.json */; };
 		E294F3A02DC2CA3B0081480B /* LICENSE in Resources */ = {isa = PBXBuildFile; fileRef = E294F39F2DC2CA3B0081480B /* LICENSE */; };
 /* End PBXBuildFile section */
 
@@ -28,6 +29,7 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
+		E27491262DC3CBB500E398AC /* exercises.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = exercises.json; sourceTree = "<group>"; };
 		E294F39F2DC2CA3B0081480B /* LICENSE */ = {isa = PBXFileReference; lastKnownFileType = text; path = LICENSE; sourceTree = "<group>"; };
 		E2B16C742DBE8DEA00722A4C /* PlainFit.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = PlainFit.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		E2B16C812DBE8DEC00722A4C /* PlainFitTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = PlainFitTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -80,6 +82,7 @@
 		E2B16C6B2DBE8DEA00722A4C = {
 			isa = PBXGroup;
 			children = (
+				E27491262DC3CBB500E398AC /* exercises.json */,
 				E294F39F2DC2CA3B0081480B /* LICENSE */,
 				E2B16C762DBE8DEA00722A4C /* PlainFit */,
 				E2B16C842DBE8DEC00722A4C /* PlainFitTests */,
@@ -218,6 +221,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				E27491272DC3CBB500E398AC /* exercises.json in Resources */,
 				E294F3A02DC2CA3B0081480B /* LICENSE in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
