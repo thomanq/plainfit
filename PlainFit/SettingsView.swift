@@ -1,14 +1,16 @@
 import SwiftUI
 
+enum WeekStart: String, CaseIterable, Identifiable {
+    case sunday = "Sunday"
+    case monday = "Monday"
+    case saturday = "Saturday"
+    
+    var id: String { self.rawValue }
+}
+
 struct SettingsView: View {
     @Environment(\.dismiss) var dismiss
     @AppStorage("weekStart") private var weekStart = WeekStart.sunday
-    
-    enum WeekStart: String, CaseIterable {
-        case sunday = "Sunday"
-        case monday = "Monday"
-        case saturday = "Saturday"
-    }
     
     private let licenseText: String = {
         if let licensePath = Bundle.main.path(forResource: "LICENSE", ofType: ""),
