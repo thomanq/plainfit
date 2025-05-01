@@ -14,10 +14,18 @@ struct AddExerciseTypeSheet: View {
     @State private var errorMessage = ""
     
     private let availableTypes = ["weight", "reps", "distance", "time"]
+    let exerciseTypeToEdit: ExerciseType?
     
-    init(isPresented: Binding<Bool>, defaultCategoryId: Int32? = nil) {
+    init(isPresented: Binding<Bool>, defaultCategoryId: Int32? = nil, exerciseTypeToEdit: ExerciseType? = nil) {
         _isPresented = isPresented
         _selectedCategoryId = State(initialValue: defaultCategoryId)
+        self.exerciseTypeToEdit = exerciseTypeToEdit
+        
+        if let editType = exerciseTypeToEdit {
+            _newName = State(initialValue: editType.name)
+            _selectedTypes = State(initialValue: Set(editType.type.split(separator: ",").map(String.init)))
+            _newType = State(initialValue: editType.type)
+        }
     }
     
     var body: some View {
@@ -58,7 +66,7 @@ struct AddExerciseTypeSheet: View {
                     }
                 }
                 
-                Button("Add Exercise Type") {
+                Button(exerciseTypeToEdit == nil ? "Add Exercise Type" : "Edit Exercise Type") {
                     if newName.isEmpty {
                         errorMessage = "Please enter an exercise name"
                         showError = true
@@ -69,18 +77,25 @@ struct AddExerciseTypeSheet: View {
                         errorMessage = "Please select a category"
                         showError = true
                     } else {
-                        if let typeId = DatabaseHelper.shared.insertExerciseType(name: newName, type: newType) {
-                            _ = DatabaseHelper.shared.linkExerciseTypeToCategory(exerciseTypeId: typeId, categoryId: selectedCategoryId!)
-                            newName = ""
-                            newType = ""
-                            selectedCategoryId = nil
-                            selectedTypes.removeAll()
-                            isPresented = false
+                        if let exerciseType = exerciseTypeToEdit {
+                            DatabaseHelper.shared.updateExerciseType(id: exerciseType.id, name: newName, type: newType)
+                            if let categoryId = selectedCategoryId {
+                                DatabaseHelper.shared.updateExerciseTypeCategory(exerciseTypeId: exerciseType.id, categoryId: categoryId)
+                            }
+                        } else {
+                            if let typeId = DatabaseHelper.shared.insertExerciseType(name: newName, type: newType) {
+                                _ = DatabaseHelper.shared.linkExerciseTypeToCategory(exerciseTypeId: typeId, categoryId: selectedCategoryId!)
+                            }
                         }
+                        newName = ""
+                        newType = ""
+                        selectedCategoryId = nil
+                        selectedTypes.removeAll()
+                        isPresented = false
                     }
                 }
             }
-            .navigationTitle("New Exercise Type")
+            .navigationTitle(exerciseTypeToEdit == nil ? "New Exercise Type" : "Edit Exercise Type")
             .alert("Error", isPresented: $showError) {
                 Button("OK", role: .cancel) {
                     showError = false

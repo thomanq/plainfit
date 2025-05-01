@@ -38,10 +38,14 @@ struct ExerciseType: Identifiable, Hashable {
     
     func hash(into hasher: inout Hasher) {
         hasher.combine(id)
+        hasher.combine(name)
+        hasher.combine(type)
     }
     
     static func == (lhs: ExerciseType, rhs: ExerciseType) -> Bool {
-        return lhs.id == rhs.id
+        return lhs.id == rhs.id &&
+               lhs.name == rhs.name &&
+               lhs.type == rhs.type
     }
 }
 
@@ -433,6 +437,42 @@ class DatabaseHelper {
         }
         sqlite3_finalize(queryStatement)
         return exerciseTypes
+    }
+
+    func updateExerciseType(id: Int32, name: String, type: String) -> Bool {
+        let updateStatementString = "UPDATE exercise_types SET name = ?, type = ? WHERE id = ?"
+        var updateStatement: OpaquePointer?
+        
+        if sqlite3_prepare_v2(db, updateStatementString, -1, &updateStatement, nil) == SQLITE_OK {
+            sqlite3_bind_text(updateStatement, 1, (name as NSString).utf8String, -1, nil)
+            sqlite3_bind_text(updateStatement, 2, (type as NSString).utf8String, -1, nil)
+            sqlite3_bind_int(updateStatement, 3, id)
+            
+            if sqlite3_step(updateStatement) == SQLITE_DONE {
+                sqlite3_finalize(updateStatement)
+                return true
+            }
+        }
+        sqlite3_finalize(updateStatement)
+        return false
+    }
+    
+    func updateExerciseTypeCategory(exerciseTypeId: Int32, categoryId: Int32) -> Bool {
+        // First delete existing category link
+        let deleteStatementString = "DELETE FROM exercise_type_categories WHERE exercise_type_id = ?"
+        var deleteStatement: OpaquePointer?
+        
+        if sqlite3_prepare_v2(db, deleteStatementString, -1, &deleteStatement, nil) == SQLITE_OK {
+            sqlite3_bind_int(deleteStatement, 1, exerciseTypeId)
+            
+            if sqlite3_step(deleteStatement) == SQLITE_DONE {
+                sqlite3_finalize(deleteStatement)
+                // Then add new category link
+                return linkExerciseTypeToCategory(exerciseTypeId: exerciseTypeId, categoryId: categoryId)
+            }
+        }
+        sqlite3_finalize(deleteStatement)
+        return false
     }
 
     func exportToCSV() -> String {
