@@ -18,7 +18,7 @@ struct HomeView: View {
   @State private var selectedCategoryId: Int32?
   @State private var showingCategorySheet = false
   @State private var newCategoryName = ""
-  @State private var showCategoryPicker : Bool = false
+  @State private var showCategoryPicker: Bool = false
   @State private var showingCalendar = false
   @State private var showingSettings = false
 
@@ -29,8 +29,9 @@ struct HomeView: View {
       applicationActivities: nil
     )
     if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
-       let window = windowScene.windows.first,
-       let rootViewController = window.rootViewController {
+      let window = windowScene.windows.first,
+      let rootViewController = window.rootViewController
+    {
       rootViewController.present(activityViewController, animated: true)
     }
   }
@@ -81,26 +82,104 @@ struct HomeView: View {
             }
             .padding(.horizontal)
 
-            ForEach(fitnessEntries) { entry in
+            let groupedEntries = Dictionary(grouping: fitnessEntries, by: { $0.set_id })
+
+            ForEach(groupedEntries.keys.sorted(), id: \.self) { setId in
               VStack(alignment: .leading) {
-                Text("Exercise: \(entry.exerciseName)")
-                  .font(.headline)
-                Text("Duration: \(formatDuration(entry.duration))")
-                  .font(.subheadline)
-                Text("Sets: \(entry.sets) | Reps: \(entry.reps)")
-                  .font(.subheadline)
-                let categories = DatabaseHelper.shared.getCategoriesForEntry(entryId: entry.id)
-                if !categories.isEmpty {
-                  Text("Categories: \(categories.map { $0.name }.joined(separator: ", "))")
-                    .font(.caption)
-                    .foregroundColor(.gray)
+                // Text("Set ID: \(setId)")
+                //   .font(.headline)
+                //   .padding(.bottom, 16)
+
+                if let entries: [FitnessEntry] = groupedEntries[setId] {
+                  let hasDuration = entries.contains { $0.duration > 0 }
+                  let hasReps = entries.contains { $0.reps > 0 }
+                  let hasDistance = entries.contains { $0.distance != nil }
+                  let hasWeight = entries.contains { $0.weight != nil }
+
+                  VStack(spacing: 0) {
+
+                    if let firstEntry = entries.first {
+                      Text(firstEntry.exerciseName)
+                        .font(.headline)
+                        .padding(.bottom, 16)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                    }
+                    // Header row
+                    HStack {
+                      Text("#")
+                        .font(.system(.subheadline, design: .rounded, weight: .medium))
+                        .frame(width: 40, alignment: .leading)
+                        .background(Color.gray.opacity(0.1))
+                      if hasDuration {
+                        Text("Duration")
+                          .font(.system(.subheadline, design: .rounded, weight: .medium))
+                          .frame(maxWidth: .infinity, alignment: .leading)
+                      }
+                      if hasReps {
+                        Text("Reps")
+                          .font(.system(.subheadline, design: .rounded, weight: .medium))
+                          .frame(maxWidth: .infinity, alignment: .leading)
+                      }
+                      if hasDistance {
+                        Text("Distance")
+                          .font(.system(.subheadline, design: .rounded, weight: .medium))
+                          .frame(maxWidth: .infinity, alignment: .leading)
+                      }
+                      if hasWeight {
+                        Text("Weight")
+                          .font(.system(.subheadline, design: .rounded, weight: .medium))
+                          .frame(maxWidth: .infinity, alignment: .leading)
+                      }
+                    }
+                    .padding(.vertical, 10)
+                    .padding(.horizontal, 8)
+                    .background(Color.gray.opacity(0.1))
+                    .clipShape(RoundedRectangle(cornerRadius: 8))
+
+                    // Data rows
+                    ForEach(Array(entries.enumerated()), id: \.element.id) { index, entry in
+                      HStack {
+                        Text("\(index + 1)")
+                          .font(.system(.body, design: .rounded))
+                          .foregroundColor(.secondary)
+                          .frame(width: 40, alignment: .leading)
+
+                        if hasDuration {
+                          Text(formatDuration(entry.duration))
+                            .font(.system(.body, design: .rounded))
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                        }
+                        if hasReps {
+                          Text(entry.reps > 0 ? "\(entry.reps)" : "-")
+                            .font(.system(.body, design: .rounded))
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                        }
+                        if hasDistance {
+                          Text(entry.distance.map { String(format: "%.1f", $0) } ?? "-")
+                            .font(.system(.body, design: .rounded))
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                        }
+                        if hasWeight {
+                          Text(entry.weight.map { String(format: "%.1f", $0) } ?? "-")
+                            .font(.system(.body, design: .rounded))
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                        }
+                      }
+                      .padding(.vertical, 12)
+                      .padding(.horizontal, 8)
+                      .background(
+                        RoundedRectangle(cornerRadius: 8)
+                          .fill(Color.white)
+                          .shadow(color: Color.black.opacity(0.03), radius: 2, x: 0, y: 1)
+                      )
+                      .padding(.vertical, 2)
+                    }
+                  }
+                  .padding(.horizontal)
                 }
               }
-              .frame(maxWidth: .infinity, alignment: .leading)
-              .padding()
-              .background(Color.gray.opacity(0.1))
-              .cornerRadius(8)
-              .padding(.horizontal)
+              // .padding(.horizontal)
+              // .padding(.bottom, 16)
             }
           }
           .padding(.vertical)
@@ -108,7 +187,11 @@ struct HomeView: View {
 
         VStack {
           Spacer()
-          NavigationLink(destination: CategoryPicker(selectedDate: currentDate, showCategoryPicker: $showCategoryPicker), isActive: $showCategoryPicker) {
+          NavigationLink(
+            destination: CategoryPicker(
+              selectedDate: currentDate, showCategoryPicker: $showCategoryPicker),
+            isActive: $showCategoryPicker
+          ) {
             Image(systemName: "plus.circle.fill")
               .font(.system(size: 50))
               .foregroundColor(.blue)
