@@ -6,6 +6,7 @@ struct AddExerciseEntryView: View {
     @Binding var showCategoryPicker: Bool
 
     let exerciseType: ExerciseType
+    @State private var nextID: Int32 = 0
     @State private var exerciseDate: Date
     @State private var hours: String = ""
     @State private var minutes: String = ""
@@ -20,9 +21,9 @@ struct AddExerciseEntryView: View {
     private var distanceUnits: [String] = []
     private var weightUnits: [String] = []
 
-    @State private var exercises: [ExerciseEntry] = []
+    @State private var exercises: [FitnessEntry] = []
     @State private var isEditing: Bool = false
-    @State private var editingExerciseID: UUID? = nil
+    @State private var editingExerciseID: Int32 = 0
     @State private var setID: Int32 = DatabaseHelper.shared.generateSetID()
 
     init(exerciseType: ExerciseType, selectedDate: Date, showCategoryPicker: Binding<Bool>) {
@@ -127,7 +128,7 @@ struct AddExerciseEntryView: View {
                 List {
                     ForEach(exercises) { exercise in
                         VStack(alignment: .leading) {
-                            Text(exercise.name)
+                            Text(exercise.exerciseName)
                             if exercise.duration > 0 {
                                 Text("Duration: \(formatDuration(exercise.duration))")
                             }
@@ -141,7 +142,7 @@ struct AddExerciseEntryView: View {
                                 Text("Weight: \(formatValue(weight)) \(unit)")
                             }
                         }
-                        .swipeActions(edge: .leading) {
+                        .swipeActions(edge: .leading, allowsFullSwipe: true) {
                             Button(action: {
                                 editExercise(exercise)
                             }) {
@@ -176,15 +177,19 @@ struct AddExerciseEntryView: View {
         let distanceValue = Float(distance)
         let weightValue = Float(weight)
 
-        let newExercise = ExerciseEntry(
-            name: exerciseType.name,
+        let newExercise = FitnessEntry(
+            id: nextID,
+            exerciseName: exerciseType.name,
             duration: totalDurationMs,
+            date: exerciseDate,
+            set_id: setID,
             reps: Int32(reps) ?? 0,
             distance: distanceValue,
             distanceUnit: !distance.isEmpty ? distanceUnit : nil,
             weight: weightValue,
             weightUnit: !weight.isEmpty ? weightUnit : nil
         )
+        nextID += 1
 
         exercises.append(newExercise)
 
@@ -197,7 +202,7 @@ struct AddExerciseEntryView: View {
 
         for exercise in exercises {
             _ = DatabaseHelper.shared.insertEntry(
-                exerciseName: exercise.name,
+                exerciseName: exercise.exerciseName,
                 duration: exercise.duration,
                 date: exerciseDate,
                 set_id: setID, // Use the generated set ID
@@ -216,7 +221,7 @@ struct AddExerciseEntryView: View {
         exercises.remove(atOffsets: offsets)
     }
 
-    private func editExercise(_ exercise: ExerciseEntry) {
+    private func editExercise(_ exercise: FitnessEntry) {
         isEditing = true
         editingExerciseID = exercise.id
 
@@ -238,12 +243,15 @@ struct AddExerciseEntryView: View {
     }
 
     private func saveEditedExercise() {
-        guard let editingID = editingExerciseID else { return }
 
-        if let index = exercises.firstIndex(where: { $0.id == editingID }) {
-            exercises[index] = ExerciseEntry(
-                name: exerciseType.name,
+        if let index = exercises.firstIndex(where: { $0.id == editingExerciseID }) {
+            let existingExercise = exercises[index]
+            exercises[index] = FitnessEntry(
+                id: existingExercise.id,
+                exerciseName: existingExercise.exerciseName,
                 duration: calculateDuration(),
+                date: exerciseDate,
+                set_id: existingExercise.set_id,
                 reps: Int32(reps) ?? 0,
                 distance: Float(distance),
                 distanceUnit: !distance.isEmpty ? distanceUnit : nil,
@@ -257,7 +265,6 @@ struct AddExerciseEntryView: View {
 
     private func cancelEdit() {
         isEditing = false
-        editingExerciseID = nil
         clearFields()
     }
 
@@ -285,13 +292,4 @@ struct AddExerciseEntryView: View {
 
 }
 
-struct ExerciseEntry: Identifiable {
-    let id = UUID()
-    var name: String
-    var duration: Int32
-    var reps: Int32
-    var distance: Float?
-    var distanceUnit: String?
-    var weight: Float?
-    var weightUnit: String?
-}
+

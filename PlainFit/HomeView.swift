@@ -39,56 +39,53 @@ struct HomeView: View {
   var body: some View {
     NavigationView {
       ZStack {
-        ScrollView {
-          VStack(spacing: 16) {
-            HStack {
-              Button(action: {
-                currentDate =
-                  Calendar.current.date(byAdding: .day, value: -1, to: currentDate) ?? currentDate
-              }) {
-                Image(systemName: "chevron.left")
-                  .foregroundColor(.blue)
-              }
 
-              Spacer()
-
-              Button(action: {
-                showingCalendar = true
-              }) {
-                Image(systemName: "calendar")
-              }
-              .padding(.trailing, 8)
-
-              Text(currentDate.formatted(date: .abbreviated, time: .omitted))
-                .font(.headline)
-
-              Button(action: {
-                currentDate = Date()
-              }) {
-                Image(systemName: "circle.fill")
-                  .foregroundColor(.blue)
-                  .font(.system(size: 14))
-              }
-              .padding(.leading, 8)
-              Spacer()
-              Button(action: {
-                currentDate =
-                  Calendar.current.date(byAdding: .day, value: 1, to: currentDate) ?? currentDate
-              }) {
-                Image(systemName: "chevron.right")
-                  .foregroundColor(.blue)
-              }
-
+        VStack(spacing: 16) {
+          HStack {
+            Button(action: {
+              currentDate =
+                Calendar.current.date(byAdding: .day, value: -1, to: currentDate) ?? currentDate
+            }) {
+              Image(systemName: "chevron.left")
+                .foregroundColor(.blue)
             }
-            .padding(.horizontal)
 
-            let groupedEntries = Dictionary(grouping: fitnessEntries, by: { $0.set_id })
+            Spacer()
 
+            Button(action: {
+              showingCalendar = true
+            }) {
+              Image(systemName: "calendar")
+            }
+            .padding(.trailing, 8)
+
+            Text(currentDate.formatted(date: .abbreviated, time: .omitted))
+              .font(.headline)
+
+            Button(action: {
+              currentDate = Date()
+            }) {
+              Image(systemName: "circle.fill")
+                .foregroundColor(.blue)
+                .font(.system(size: 14))
+            }
+            .padding(.leading, 8)
+            Spacer()
+            Button(action: {
+              currentDate =
+                Calendar.current.date(byAdding: .day, value: 1, to: currentDate) ?? currentDate
+            }) {
+              Image(systemName: "chevron.right")
+                .foregroundColor(.blue)
+            }
+
+          }
+          .padding(.horizontal)
+
+          let groupedEntries = Dictionary(grouping: fitnessEntries, by: { $0.set_id })
+          List {
             ForEach(groupedEntries.keys.sorted(), id: \.self) { setId in
               VStack(alignment: .leading) {
-                // Text("Set ID: \(setId)")
-                //   .font(.headline)
-                //   .padding(.bottom, 16)
 
                 if let entries: [FitnessEntry] = groupedEntries[setId] {
                   let hasDuration = entries.contains { $0.duration > 0 }
@@ -108,12 +105,12 @@ struct HomeView: View {
                     HStack {
                       Text("#")
                         .font(.system(.subheadline, design: .rounded, weight: .medium))
-                        .frame(width: 40, alignment: .leading)
-                        .background(Color.gray.opacity(0.1))
+                        .frame(width: 20, alignment: .leading)
+                        .foregroundColor(.secondary)
                       if hasDuration {
                         Text("Duration")
                           .font(.system(.subheadline, design: .rounded, weight: .medium))
-                          .frame(maxWidth: .infinity, alignment: .leading)
+                          .frame(minWidth: 80, maxWidth: .infinity, alignment: .leading)
                       }
                       if hasReps {
                         Text("Reps")
@@ -142,12 +139,12 @@ struct HomeView: View {
                         Text("\(index + 1)")
                           .font(.system(.body, design: .rounded))
                           .foregroundColor(.secondary)
-                          .frame(width: 40, alignment: .leading)
+                          .frame(width: 20, alignment: .leading)
 
                         if hasDuration {
                           Text(formatDuration(entry.duration))
                             .font(.system(.body, design: .rounded))
-                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .frame(minWidth: 80, maxWidth: .infinity, alignment: .leading)
                         }
                         if hasReps {
                           Text(entry.reps > 0 ? "\(entry.reps)" : "-")
@@ -178,11 +175,16 @@ struct HomeView: View {
                   .padding(.horizontal)
                 }
               }
-              // .padding(.horizontal)
-              // .padding(.bottom, 16)
+              .swipeActions(edge: .trailing, allowsFullSwipe: true) {
+                Button(role: .destructive) {
+                  deleteSet(setId: setId)
+                } label: {
+                  Label("Delete", systemImage: "trash")
+                }
+              }
             }
           }
-          .padding(.vertical)
+          .listStyle(PlainListStyle())
         }
 
         VStack {
@@ -244,5 +246,10 @@ struct HomeView: View {
   private func hideKeyboard() {
     UIApplication.shared.sendAction(
       #selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
+  }
+
+  private func deleteSet(setId: Int32) {
+    DatabaseHelper.shared.deleteEntriesBySetId(setId: setId)
+    fitnessEntries = DatabaseHelper.shared.fetchEntries(for: currentDate)
   }
 }
