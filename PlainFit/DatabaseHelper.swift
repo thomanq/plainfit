@@ -519,4 +519,21 @@ class DatabaseHelper {
         sqlite3_finalize(queryStatement)
         return csvString
     }
+    
+    func fetchAllExerciseTypes() -> [ExerciseType] {
+        var exerciseTypes: [ExerciseType] = []
+        let queryStatementString = "SELECT * FROM exercise_types ORDER BY name"
+        var queryStatement: OpaquePointer?
+        
+        if sqlite3_prepare_v2(db, queryStatementString, -1, &queryStatement, nil) == SQLITE_OK {
+            while sqlite3_step(queryStatement) == SQLITE_ROW {
+                let id = sqlite3_column_int(queryStatement, 0)
+                let name = String(cString: sqlite3_column_text(queryStatement, 1))
+                let type = String(cString: sqlite3_column_text(queryStatement, 2))
+                exerciseTypes.append(ExerciseType(id: id, name: name, type: type))
+            }
+        }
+        sqlite3_finalize(queryStatement)
+        return exerciseTypes
+    }
 }
