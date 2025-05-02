@@ -23,7 +23,7 @@ struct FitnessEntry: Identifiable {
     let exerciseName: String
     let duration: Int32  // Duration in milliseconds
     let date: Date
-    let sets: Int32
+    let set_id: Int32
     let reps: Int32
     let distance: Float?
     let distanceUnit: String?
@@ -63,7 +63,7 @@ class DatabaseHelper {
                         exercise_name TEXT,
                         duration INTEGER,
                         date INTEGER,
-                        sets INTEGER,
+                        set_id INTEGER,
                         reps INTEGER,
                         distance REAL,
                         distance_unit TEXT,
@@ -151,7 +151,7 @@ class DatabaseHelper {
     }
 
     func generateSetID() -> Int32 {
-        let query = "SELECT MAX(sets) FROM fitness_entries"
+        let query = "SELECT MAX(set_id) FROM fitness_entries"
         var queryStatement: OpaquePointer?
         var maxSetID: Int32 = 0
 
@@ -180,8 +180,8 @@ class DatabaseHelper {
         }
     }
 
-    func insertEntry(exerciseName: String, duration: Int32, date: Date, sets: Int32, reps: Int32, distance: Float? = nil, distanceUnit: String? = nil, weight: Float? = nil, weightUnit: String? = nil) -> Int32? {
-        let insertStatementString = "INSERT INTO fitness_entries (exercise_name, duration, date, sets, reps, distance, distance_unit, weight, weight_unit) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)"
+    func insertEntry(exerciseName: String, duration: Int32, date: Date, set_id: Int32, reps: Int32, distance: Float? = nil, distanceUnit: String? = nil, weight: Float? = nil, weightUnit: String? = nil) -> Int32? {
+        let insertStatementString = "INSERT INTO fitness_entries (exercise_name, duration, date, set_id, reps, distance, distance_unit, weight, weight_unit) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)"
         var insertStatement: OpaquePointer?
 
         if sqlite3_prepare_v2(db, insertStatementString, -1, &insertStatement, nil) == SQLITE_OK {
@@ -190,7 +190,7 @@ class DatabaseHelper {
             sqlite3_bind_text(insertStatement, 1, (exerciseName as NSString).utf8String, -1, nil)
             sqlite3_bind_int(insertStatement, 2, duration)
             sqlite3_bind_int(insertStatement, 3, timestamp)
-            sqlite3_bind_int(insertStatement, 4, sets) // Use setID here
+            sqlite3_bind_int(insertStatement, 4, set_id) // Use setID here
             sqlite3_bind_int(insertStatement, 5, reps)
 
             if let distance = distance {
@@ -248,7 +248,7 @@ class DatabaseHelper {
                 let exerciseName = String(cString: sqlite3_column_text(queryStatement, 1))
                 let duration = sqlite3_column_int(queryStatement, 2)
                 let timestamp = sqlite3_column_int(queryStatement, 3)
-                let sets = sqlite3_column_int(queryStatement, 4)
+                let set_id = sqlite3_column_int(queryStatement, 4)
                 let reps = sqlite3_column_int(queryStatement, 5)
                 let date = Date(timeIntervalSince1970: TimeInterval(timestamp))
                 
@@ -270,7 +270,7 @@ class DatabaseHelper {
                     weightUnit = String(cString: sqlite3_column_text(queryStatement, 9))
                 }
 
-                entries.append(FitnessEntry(id: id, exerciseName: exerciseName, duration: duration, date: date, sets: sets, reps: reps, distance: distance, distanceUnit: distanceUnit, weight: weight, weightUnit: weightUnit))
+                entries.append(FitnessEntry(id: id, exerciseName: exerciseName, duration: duration, date: date, set_id: set_id, reps: reps, distance: distance, distanceUnit: distanceUnit, weight: weight, weightUnit: weightUnit))
             }
         }
         sqlite3_finalize(queryStatement)
@@ -491,7 +491,7 @@ class DatabaseHelper {
     }
 
     func exportToCSV() -> String {
-        var csvString = "ID,Exercise Name,Duration,Date,Sets,Reps,Distance,Distance Unit,Weight,Weight Unit\n"
+        var csvString = "ID,Exercise Name,Duration,Date,set_id,Reps,Distance,Distance Unit,Weight,Weight Unit\n"
         let query = "SELECT * FROM fitness_entries ORDER BY date DESC"
         var queryStatement: OpaquePointer?
         
@@ -501,7 +501,7 @@ class DatabaseHelper {
                 let exerciseName = String(cString: sqlite3_column_text(queryStatement, 1))
                 let duration = sqlite3_column_int(queryStatement, 2)
                 let timestamp = sqlite3_column_int(queryStatement, 3)
-                let sets = sqlite3_column_int(queryStatement, 4)
+                let set_id = sqlite3_column_int(queryStatement, 4)
                 let reps = sqlite3_column_int(queryStatement, 5)
                 
                 let date = Date(timeIntervalSince1970: TimeInterval(timestamp))
@@ -527,7 +527,7 @@ class DatabaseHelper {
                     weightUnit = String(cString: sqlite3_column_text(queryStatement, 9))
                 }
                 
-                let row = "\(id),\"\(exerciseName)\",\(duration),\"\(dateString)\",\(sets),\(reps),\(distance),\(distanceUnit),\(weight),\(weightUnit)\n"
+                let row = "\(id),\"\(exerciseName)\",\(duration),\"\(dateString)\",\(set_id),\(reps),\(distance),\(distanceUnit),\(weight),\(weightUnit)\n"
                 csvString.append(row)
             }
         }

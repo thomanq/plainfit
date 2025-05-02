@@ -200,7 +200,7 @@ struct AddExerciseEntryView: View {
                 exerciseName: exercise.name,
                 duration: exercise.duration,
                 date: exerciseDate,
-                sets: setID, // Use the generated set ID
+                set_id: setID, // Use the generated set ID
                 reps: exercise.reps,
                 distance: exercise.distance,
                 distanceUnit: exercise.distanceUnit,
@@ -283,13 +283,6 @@ struct AddExerciseEntryView: View {
         exercises.move(fromOffsets: source, toOffset: destination)
     }
 
-    private func formatValue(_ value: Float?) -> String {
-        guard let value = value else { return "" }
-        var formattedValue = String(value)
-        formattedValue = formattedValue.replacingOccurrences(of: "0+$", with: "", options: .regularExpression)
-        formattedValue = formattedValue.replacingOccurrences(of: "\\.$", with: "", options: .regularExpression)
-        return formattedValue
-    }
 }
 
 struct ExerciseEntry: Identifiable {
