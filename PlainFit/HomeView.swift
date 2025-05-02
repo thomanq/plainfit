@@ -214,7 +214,8 @@ struct HomeView: View {
           Spacer()
           NavigationLink(
             destination: CategoryPicker(
-              selectedDate: currentDate, showCategoryPicker: $showCategoryPicker, showEditExerciseSet: $showEditExerciseSet,),
+              selectedDate: currentDate, showCategoryPicker: $showCategoryPicker,
+              showEditExerciseSet: $showEditExerciseSet, ),
             isActive: $showCategoryPicker
           ) {
             Image(systemName: "plus.circle.fill")

@@ -12,7 +12,10 @@ struct ExerciseTypePickerView: View {
   @State private var showingDeleteConfirmation = false
   @State private var exerciseTypeToDelete: ExerciseType?
 
-  init(category: Category,  selectedDate: Date, showCategoryPicker: Binding<Bool>, showEditExerciseSet: Binding<Bool>) {
+  init(
+    category: Category, selectedDate: Date, showCategoryPicker: Binding<Bool>,
+    showEditExerciseSet: Binding<Bool>
+  ) {
     self.category = category
     self.selectedDate = selectedDate
     _showCategoryPicker = showCategoryPicker
@@ -30,7 +33,7 @@ struct ExerciseTypePickerView: View {
     VStack {
       SearchBar(text: $searchText)
         .padding()
-      
+
       List {
         ForEach(filteredExerciseTypes, id: \.self) { exerciseType in
           HStack {
@@ -76,13 +79,19 @@ struct ExerciseTypePickerView: View {
           selectedExerciseType = nil
         }
       ) {
-        AddExerciseTypeSheet(isPresented: $showingAddSheet, defaultCategoryId: category.id, exerciseTypeToEdit: selectedExerciseType)
+        AddExerciseTypeSheet(
+          isPresented: $showingAddSheet, defaultCategoryId: category.id,
+          exerciseTypeToEdit: selectedExerciseType)
       }
-      .confirmationDialog("Are you sure you want to delete the \(exerciseTypeToDelete?.name ?? "???") exercise type?", isPresented: $showingDeleteConfirmation, titleVisibility: .visible) {
+      .confirmationDialog(
+        "Are you sure you want to delete the \(exerciseTypeToDelete?.name ?? "???") exercise type?",
+        isPresented: $showingDeleteConfirmation, titleVisibility: .visible
+      ) {
         Button("Delete", role: .destructive) {
           if let exerciseType = exerciseTypeToDelete {
             DatabaseHelper.shared.deleteExerciseType(id: exerciseType.id)
-            exerciseTypes = DatabaseHelper.shared.getExerciseTypesForCategory(categoryId: category.id)
+            exerciseTypes = DatabaseHelper.shared.getExerciseTypesForCategory(
+              categoryId: category.id)
           }
         }
         Button("Cancel", role: .cancel) {}
