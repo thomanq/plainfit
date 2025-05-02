@@ -8,8 +8,9 @@ struct ExerciseTypePickerView: View {
   @State private var exerciseTypes: [ExerciseType] = []
   @State private var showingAddSheet = false
   @State private var selectedExerciseType: ExerciseType?
-  @State private var isEditMode = false
   @State private var searchText = ""
+  @State private var showingDeleteConfirmation = false
+  @State private var exerciseTypeToDelete: ExerciseType?
 
   init(category: Category,  selectedDate: Date, showCategoryPicker: Binding<Bool>, showEditExerciseSet: Binding<Bool>) {
     self.category = category
@@ -30,9 +31,9 @@ struct ExerciseTypePickerView: View {
       SearchBar(text: $searchText)
         .padding()
       
-      List(filteredExerciseTypes, id: \.self) { exerciseType in
-        HStack {
-          if !isEditMode {
+      List {
+        ForEach(filteredExerciseTypes, id: \.self) { exerciseType in
+          HStack {
             NavigationLink(
               destination: AddExerciseEntryView(
                 exerciseType: exerciseType,
@@ -43,25 +44,23 @@ struct ExerciseTypePickerView: View {
             ) {
               Text(exerciseType.name)
             }
-          } else {
-            Text(exerciseType.name)
-            Spacer()
+          }
+          .swipeActions(edge: .leading, allowsFullSwipe: true) {
             Button(action: {
               selectedExerciseType = exerciseType
               showingAddSheet = true
             }) {
-              Image(systemName: "pencil")
+              Label("Edit", systemImage: "pencil")
             }
+            .tint(.blue)
           }
         }
+        .onDelete(perform: deleteExerciseType)
       }
       .navigationTitle(category.name)
       .navigationBarTitleDisplayMode(.inline)
       .toolbar {
         ToolbarItemGroup(placement: .navigationBarTrailing) {
-          Button(action: { isEditMode.toggle() }) {
-            Image(systemName: isEditMode ? "xmark" : "pencil")
-          }
           Button(action: { showingAddSheet = true }) {
             Image(systemName: "plus")
           }
@@ -79,6 +78,22 @@ struct ExerciseTypePickerView: View {
       ) {
         AddExerciseTypeSheet(isPresented: $showingAddSheet, defaultCategoryId: category.id, exerciseTypeToEdit: selectedExerciseType)
       }
+      .confirmationDialog("Are you sure you want to delete the \(exerciseTypeToDelete?.name ?? "???") exercise type?", isPresented: $showingDeleteConfirmation, titleVisibility: .visible) {
+        Button("Delete", role: .destructive) {
+          if let exerciseType = exerciseTypeToDelete {
+            DatabaseHelper.shared.deleteExerciseType(id: exerciseType.id)
+            exerciseTypes = DatabaseHelper.shared.getExerciseTypesForCategory(categoryId: category.id)
+          }
+        }
+        Button("Cancel", role: .cancel) {}
+      }
+    }
+  }
+
+  private func deleteExerciseType(at offsets: IndexSet) {
+    for index in offsets {
+      exerciseTypeToDelete = filteredExerciseTypes[index]
+      showingDeleteConfirmation = true
     }
   }
 }
