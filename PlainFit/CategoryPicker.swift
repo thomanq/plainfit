@@ -2,6 +2,7 @@ import SwiftUI
 
 struct CategoryPicker: View {
   @Binding var showCategoryPicker: Bool
+  @Binding var showEditExerciseSet: Bool
 
   let selectedDate: Date
   @State private var categories: [Category] = []
@@ -9,9 +10,10 @@ struct CategoryPicker: View {
   @State private var showingAddSheet = false
   @State private var searchText = ""
 
-  init(selectedDate: Date, showCategoryPicker: Binding<Bool>) {
+  init(selectedDate: Date, showCategoryPicker: Binding<Bool>, showEditExerciseSet: Binding<Bool>) {
     self.selectedDate = selectedDate
     _showCategoryPicker = showCategoryPicker
+    _showEditExerciseSet = showEditExerciseSet
   }
 
   var filteredExercises: [ExerciseType] {
@@ -30,7 +32,8 @@ struct CategoryPicker: View {
               destination: ExerciseTypePickerView(
                 category: category,
                 selectedDate: selectedDate,
-                showCategoryPicker: $showCategoryPicker
+                showCategoryPicker: $showCategoryPicker,
+                showEditExerciseSet: $showEditExerciseSet
               )
             ) {
               Text(category.name)
@@ -42,7 +45,8 @@ struct CategoryPicker: View {
               destination: AddExerciseEntryView(
                 exerciseType: exerciseType,
                 selectedDate: selectedDate,
-                showCategoryPicker: $showCategoryPicker
+                showCategoryPicker: $showCategoryPicker,
+                showEditExerciseSet: $showEditExerciseSet
               )
             ) {
               Text(exerciseType.name)

@@ -21,6 +21,7 @@ struct Category: Identifiable {
 struct FitnessEntry: Identifiable {
     let id: Int32
     let exerciseName: String
+    let exerciseType: String
     let duration: Int32  // Duration in milliseconds
     let date: Date
     let set_id: Int32
@@ -56,11 +57,11 @@ class DatabaseHelper {
     private init() {
         if let dbPath = try? FileManager.default.url(for: .documentDirectory, in: .userDomainMask, appropriateFor: nil, create: false).appendingPathComponent("fitness.db").path {
             if sqlite3_open(dbPath, &db) == SQLITE_OK {
-                // Create fitness_entries table
                 if sqlite3_exec(db, """
                     CREATE TABLE IF NOT EXISTS fitness_entries (
                         id INTEGER PRIMARY KEY AUTOINCREMENT,
                         exercise_name TEXT,
+                        exercise_type TEXT,
                         duration INTEGER,
                         date INTEGER,
                         set_id INTEGER,
@@ -180,41 +181,42 @@ class DatabaseHelper {
         }
     }
 
-    func insertEntry(exerciseName: String, duration: Int32, date: Date, set_id: Int32, reps: Int32, distance: Float? = nil, distanceUnit: String? = nil, weight: Float? = nil, weightUnit: String? = nil) -> Int32? {
-        let insertStatementString = "INSERT INTO fitness_entries (exercise_name, duration, date, set_id, reps, distance, distance_unit, weight, weight_unit) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)"
+    func insertEntry(exerciseName: String, exerciseType: String,  duration: Int32, date: Date, set_id: Int32, reps: Int32, distance: Float? = nil, distanceUnit: String? = nil, weight: Float? = nil, weightUnit: String? = nil) -> Int32? {
+        let insertStatementString = "INSERT INTO fitness_entries (exercise_name, exercise_type, duration, date, set_id, reps, distance, distance_unit, weight, weight_unit) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
         var insertStatement: OpaquePointer?
 
         if sqlite3_prepare_v2(db, insertStatementString, -1, &insertStatement, nil) == SQLITE_OK {
             let timestamp = Int32(date.timeIntervalSince1970)
 
             sqlite3_bind_text(insertStatement, 1, (exerciseName as NSString).utf8String, -1, nil)
-            sqlite3_bind_int(insertStatement, 2, duration)
-            sqlite3_bind_int(insertStatement, 3, timestamp)
-            sqlite3_bind_int(insertStatement, 4, set_id) // Use setID here
-            sqlite3_bind_int(insertStatement, 5, reps)
+            sqlite3_bind_text(insertStatement, 2, (exerciseType as NSString).utf8String, -1, nil)
+            sqlite3_bind_int(insertStatement, 3, duration)
+            sqlite3_bind_int(insertStatement, 4, timestamp)
+            sqlite3_bind_int(insertStatement, 5, set_id)
+            sqlite3_bind_int(insertStatement, 6, reps)
 
             if let distance = distance {
-                sqlite3_bind_double(insertStatement, 6, Double(distance))
-            } else {
-                sqlite3_bind_null(insertStatement, 6)
-            }
-
-            if let distanceUnit = distanceUnit {
-                sqlite3_bind_text(insertStatement, 7, (distanceUnit as NSString).utf8String, -1, nil)
+                sqlite3_bind_double(insertStatement, 7, Double(distance))
             } else {
                 sqlite3_bind_null(insertStatement, 7)
             }
 
-            if let weight = weight {
-                sqlite3_bind_double(insertStatement, 8, Double(weight))
+            if let distanceUnit = distanceUnit {
+                sqlite3_bind_text(insertStatement, 8, (distanceUnit as NSString).utf8String, -1, nil)
             } else {
                 sqlite3_bind_null(insertStatement, 8)
             }
 
-            if let weightUnit = weightUnit {
-                sqlite3_bind_text(insertStatement, 9, (weightUnit as NSString).utf8String, -1, nil)
+            if let weight = weight {
+                sqlite3_bind_double(insertStatement, 9, Double(weight))
             } else {
                 sqlite3_bind_null(insertStatement, 9)
+            }
+
+            if let weightUnit = weightUnit {
+                sqlite3_bind_text(insertStatement, 10, (weightUnit as NSString).utf8String, -1, nil)
+            } else {
+                sqlite3_bind_null(insertStatement, 10)
             }
 
             if sqlite3_step(insertStatement) == SQLITE_DONE {
@@ -246,10 +248,11 @@ class DatabaseHelper {
             while sqlite3_step(queryStatement) == SQLITE_ROW {
                 let id = sqlite3_column_int(queryStatement, 0)
                 let exerciseName = String(cString: sqlite3_column_text(queryStatement, 1))
-                let duration = sqlite3_column_int(queryStatement, 2)
-                let timestamp = sqlite3_column_int(queryStatement, 3)
-                let set_id = sqlite3_column_int(queryStatement, 4)
-                let reps = sqlite3_column_int(queryStatement, 5)
+                let exerciseType = String(cString: sqlite3_column_text(queryStatement, 2))
+                let duration = sqlite3_column_int(queryStatement, 3)
+                let timestamp = sqlite3_column_int(queryStatement, 4)
+                let set_id = sqlite3_column_int(queryStatement, 5)
+                let reps = sqlite3_column_int(queryStatement, 6)
                 let date = Date(timeIntervalSince1970: TimeInterval(timestamp))
                 
                 var distance: Float?
@@ -257,20 +260,20 @@ class DatabaseHelper {
                 var weight: Float?
                 var weightUnit: String?
                 
-                if sqlite3_column_type(queryStatement, 6) != SQLITE_NULL {
-                    distance = Float(sqlite3_column_double(queryStatement, 6))
-                }
                 if sqlite3_column_type(queryStatement, 7) != SQLITE_NULL {
-                    distanceUnit = String(cString: sqlite3_column_text(queryStatement, 7))
+                    distance = Float(sqlite3_column_double(queryStatement, 7))
                 }
                 if sqlite3_column_type(queryStatement, 8) != SQLITE_NULL {
-                    weight = Float(sqlite3_column_double(queryStatement, 8))
+                    distanceUnit = String(cString: sqlite3_column_text(queryStatement, 8))
                 }
                 if sqlite3_column_type(queryStatement, 9) != SQLITE_NULL {
-                    weightUnit = String(cString: sqlite3_column_text(queryStatement, 9))
+                    weight = Float(sqlite3_column_double(queryStatement, 9))
+                }
+                if sqlite3_column_type(queryStatement, 10) != SQLITE_NULL {
+                    weightUnit = String(cString: sqlite3_column_text(queryStatement, 10))
                 }
 
-                entries.append(FitnessEntry(id: id, exerciseName: exerciseName, duration: duration, date: date, set_id: set_id, reps: reps, distance: distance, distanceUnit: distanceUnit, weight: weight, weightUnit: weightUnit))
+                entries.append(FitnessEntry(id: id, exerciseName: exerciseName,  exerciseType: exerciseType, duration: duration, date: date, set_id: set_id, reps: reps, distance: distance, distanceUnit: distanceUnit, weight: weight, weightUnit: weightUnit))
             }
         }
         sqlite3_finalize(queryStatement)
@@ -505,7 +508,7 @@ class DatabaseHelper {
     }
     
     func exportToCSV() -> String {
-        var csvString = "ID,Exercise Name,Duration,Date,set_id,Reps,Distance,Distance Unit,Weight,Weight Unit\n"
+        var csvString = "ID,Exercise Name,Exercise Type,Duration,Date,set_id,Reps,Distance,Distance Unit,Weight,Weight Unit\n"
         let query = "SELECT * FROM fitness_entries ORDER BY date DESC"
         var queryStatement: OpaquePointer?
         
@@ -513,10 +516,11 @@ class DatabaseHelper {
             while sqlite3_step(queryStatement) == SQLITE_ROW {
                 let id = sqlite3_column_int(queryStatement, 0)
                 let exerciseName = String(cString: sqlite3_column_text(queryStatement, 1))
-                let duration = sqlite3_column_int(queryStatement, 2)
-                let timestamp = sqlite3_column_int(queryStatement, 3)
-                let set_id = sqlite3_column_int(queryStatement, 4)
-                let reps = sqlite3_column_int(queryStatement, 5)
+                let exerciseType = String(cString: sqlite3_column_text(queryStatement, 2))
+                let duration = sqlite3_column_int(queryStatement, 3)
+                let timestamp = sqlite3_column_int(queryStatement, 4)
+                let set_id = sqlite3_column_int(queryStatement, 5)
+                let reps = sqlite3_column_int(queryStatement, 6)
                 
                 let date = Date(timeIntervalSince1970: TimeInterval(timestamp))
                 let dateFormatter = DateFormatter()
@@ -528,20 +532,20 @@ class DatabaseHelper {
                 var weight = "N/A"
                 var weightUnit = "N/A"
                 
-                if sqlite3_column_type(queryStatement, 6) != SQLITE_NULL {
-                    distance = String(Float(sqlite3_column_double(queryStatement, 6)))
-                }
                 if sqlite3_column_type(queryStatement, 7) != SQLITE_NULL {
-                    distanceUnit = String(cString: sqlite3_column_text(queryStatement, 7))
+                    distance = String(Float(sqlite3_column_double(queryStatement, 7)))
                 }
                 if sqlite3_column_type(queryStatement, 8) != SQLITE_NULL {
-                    weight = String(Float(sqlite3_column_double(queryStatement, 8)))
+                    distanceUnit = String(cString: sqlite3_column_text(queryStatement, 8))
                 }
                 if sqlite3_column_type(queryStatement, 9) != SQLITE_NULL {
-                    weightUnit = String(cString: sqlite3_column_text(queryStatement, 9))
+                    weight = String(Float(sqlite3_column_double(queryStatement, 9)))
+                }
+                if sqlite3_column_type(queryStatement, 10) != SQLITE_NULL {
+                    weightUnit = String(cString: sqlite3_column_text(queryStatement, 10))
                 }
                 
-                let row = "\(id),\"\(exerciseName)\",\(duration),\"\(dateString)\",\(set_id),\(reps),\(distance),\(distanceUnit),\(weight),\(weightUnit)\n"
+                let row = "\(id),\"\(exerciseName)\",\"\(exerciseType)\",\(duration),\"\(dateString)\",\(set_id),\(reps),\(distance),\(distanceUnit),\(weight),\(weightUnit)\n"
                 csvString.append(row)
             }
         }
@@ -577,10 +581,11 @@ class DatabaseHelper {
             while sqlite3_step(queryStatement) == SQLITE_ROW {
                 let id = sqlite3_column_int(queryStatement, 0)
                 let exerciseName = String(cString: sqlite3_column_text(queryStatement, 1))
-                let duration = sqlite3_column_int(queryStatement, 2)
-                let timestamp = sqlite3_column_int(queryStatement, 3)
-                let set_id = sqlite3_column_int(queryStatement, 4)
-                let reps = sqlite3_column_int(queryStatement, 5)
+                let exerciseType = String(cString: sqlite3_column_text(queryStatement, 2))
+                let duration = sqlite3_column_int(queryStatement, 3)
+                let timestamp = sqlite3_column_int(queryStatement, 4)
+                let set_id = sqlite3_column_int(queryStatement, 5)
+                let reps = sqlite3_column_int(queryStatement, 6)
                 let date = Date(timeIntervalSince1970: TimeInterval(timestamp))
 
                 var distance: Float?
@@ -588,20 +593,20 @@ class DatabaseHelper {
                 var weight: Float?
                 var weightUnit: String?
 
-                if sqlite3_column_type(queryStatement, 6) != SQLITE_NULL {
-                    distance = Float(sqlite3_column_double(queryStatement, 6))
-                }
                 if sqlite3_column_type(queryStatement, 7) != SQLITE_NULL {
-                    distanceUnit = String(cString: sqlite3_column_text(queryStatement, 7))
+                    distance = Float(sqlite3_column_double(queryStatement, 7))
                 }
                 if sqlite3_column_type(queryStatement, 8) != SQLITE_NULL {
-                    weight = Float(sqlite3_column_double(queryStatement, 8))
+                    distanceUnit = String(cString: sqlite3_column_text(queryStatement, 8))
                 }
                 if sqlite3_column_type(queryStatement, 9) != SQLITE_NULL {
-                    weightUnit = String(cString: sqlite3_column_text(queryStatement, 9))
+                    weight = Float(sqlite3_column_double(queryStatement, 9))
+                }
+                if sqlite3_column_type(queryStatement, 10) != SQLITE_NULL {
+                    weightUnit = String(cString: sqlite3_column_text(queryStatement, 10))
                 }
 
-                entries.append(FitnessEntry(id: id, exerciseName: exerciseName, duration: duration, date: date, set_id: set_id, reps: reps, distance: distance, distanceUnit: distanceUnit, weight: weight, weightUnit: weightUnit))
+                entries.append(FitnessEntry(id: id, exerciseName: exerciseName, exerciseType: exerciseType, duration: duration, date: date, set_id: set_id, reps: reps, distance: distance, distanceUnit: distanceUnit, weight: weight, weightUnit: weightUnit))
             }
         }
         sqlite3_finalize(queryStatement)

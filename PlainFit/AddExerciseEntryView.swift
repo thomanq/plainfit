@@ -4,6 +4,7 @@ struct AddExerciseEntryView: View {
     @Environment(\.dismiss) var dismiss
     @AppStorage("unitSystem") private var unitSystem = UnitSystem.imperial
     @Binding var showCategoryPicker: Bool
+    @Binding var showEditExerciseSet: Bool
 
     let exerciseType: ExerciseType
     @State private var nextID: Int32 = 0
@@ -24,11 +25,26 @@ struct AddExerciseEntryView: View {
     @State private var exercises: [FitnessEntry] = []
     @State private var isEditing: Bool = false
     @State private var editingExerciseID: Int32 = 0
-    @State private var setID: Int32 = DatabaseHelper.shared.generateSetID()
+    @State private var setID: Int32
 
-    init(exerciseType: ExerciseType, selectedDate: Date, showCategoryPicker: Binding<Bool>) {
-        self.exerciseType = exerciseType
+    init(exerciseType: ExerciseType? = nil, selectedDate: Date, showCategoryPicker: Binding<Bool>, showEditExerciseSet: Binding<Bool>,  setID: Int32? = nil) {
+        if let setID = setID {
+            _setID = State(initialValue: setID)
+            _exercises = State(initialValue: DatabaseHelper.shared.fetchEntriesBySetId(setId: setID))
+        } else {
+            _setID = State(initialValue: DatabaseHelper.shared.generateSetID())
+        }
+
+        if let exerciseType = exerciseType {
+            self.exerciseType = exerciseType
+        } else if let firstExercise = _exercises.wrappedValue.first {
+            self.exerciseType = ExerciseType(id: 0, name: firstExercise.exerciseName, type: firstExercise.exerciseType)
+        } else {
+            self.exerciseType = ExerciseType(id: 0, name: "Unknown", type: "weight,reps,distance,time")
+        }
+
         _showCategoryPicker = showCategoryPicker
+        _showEditExerciseSet = showEditExerciseSet
 
         _exerciseDate = State(initialValue: selectedDate)
         _distanceUnit = State(initialValue: unitSystem == .imperial ? "mi" : "km")
@@ -180,6 +196,7 @@ struct AddExerciseEntryView: View {
         let newExercise = FitnessEntry(
             id: nextID,
             exerciseName: exerciseType.name,
+            exerciseType: exerciseType.type,
             duration: totalDurationMs,
             date: exerciseDate,
             set_id: setID,
@@ -200,9 +217,12 @@ struct AddExerciseEntryView: View {
     private func saveExercise() {
         guard !exercises.isEmpty else { return }
 
+        DatabaseHelper.shared.deleteEntriesBySetId(setId: setID)
+
         for exercise in exercises {
             _ = DatabaseHelper.shared.insertEntry(
                 exerciseName: exercise.exerciseName,
+                exerciseType: exercise.exerciseType,
                 duration: exercise.duration,
                 date: exerciseDate,
                 set_id: setID, // Use the generated set ID
@@ -215,6 +235,7 @@ struct AddExerciseEntryView: View {
         }
 
         showCategoryPicker = false
+        showEditExerciseSet = false
     }
 
     private func deleteExercise(at offsets: IndexSet) {
@@ -249,6 +270,7 @@ struct AddExerciseEntryView: View {
             exercises[index] = FitnessEntry(
                 id: existingExercise.id,
                 exerciseName: existingExercise.exerciseName,
+                exerciseType: existingExercise.exerciseType,
                 duration: calculateDuration(),
                 date: exerciseDate,
                 set_id: existingExercise.set_id,
