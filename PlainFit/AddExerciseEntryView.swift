@@ -26,6 +26,8 @@ struct AddExerciseEntryView: View {
     @State private var isEditing: Bool = false
     @State private var editingExerciseID: Int32 = 0
     @State private var setID: Int32
+    @State private var showErrorModal: Bool = false
+    @State private var errorMessage: String = ""
 
     init(exerciseType: ExerciseType? = nil, selectedDate: Date, showCategoryPicker: Binding<Bool>, showEditExerciseSet: Binding<Bool>,  setID: Int32? = nil) {
         if let setID = setID {
@@ -131,7 +133,14 @@ struct AddExerciseEntryView: View {
                     }
                 }
             }
-            Button(action: isEditing ? saveEditedExercise : addExercise) {
+            Button(action: {
+                if weight.isEmpty && reps.isEmpty && distance.isEmpty && hours.isEmpty && minutes.isEmpty && seconds.isEmpty && milliseconds.isEmpty {
+                    errorMessage = "Please fill in at least one field (weight, reps, distance, or duration) to add an exercise."
+                    showErrorModal = true
+                } else {
+                    isEditing ? saveEditedExercise() : addExercise()
+                }
+            }) {
                 Text(isEditing ? "Edit Exercise" : "Add Exercise to Set")
             }
             if isEditing {
@@ -176,11 +185,24 @@ struct AddExerciseEntryView: View {
                 )
             }
 
-            Button(action: saveExercise) {
-                Text("Save Set")
+            Button(action: {
+                if !reps.isEmpty || !weight.isEmpty || !hours.isEmpty || !minutes.isEmpty || !seconds.isEmpty || !milliseconds.isEmpty || !distance.isEmpty {
+                    errorMessage = "Cannot save set. Ensure no fields are filled."
+                    showErrorModal = true
+                } else if exercises.isEmpty  {
+                    errorMessage = "Cannot save set. Ensure at least one exercise is added."
+                    showErrorModal = true
+                }else{
+                    saveExercise()
+                }
+            }) {
+                Text(showEditExerciseSet ? "Edit Set" : "Save Set")
             }
         }
-        .navigationTitle("Add Exercise")
+        .alert(isPresented: $showErrorModal) {
+            Alert(title: Text("Error"), message: Text(errorMessage), dismissButton: .default(Text("OK")))
+        }
+        .navigationTitle(showEditExerciseSet ? "Edit Exercise" : "Add Exercise")
     }
 
     private func addExercise() {
