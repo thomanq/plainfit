@@ -28,7 +28,7 @@ struct CategoryPicker: View {
     VStack {
       SearchBar(text: $searchText)
         .padding()
-      
+
       List {
         if searchText.isEmpty {
           ForEach(categories) { category in
@@ -44,25 +44,26 @@ struct CategoryPicker: View {
             }
             .swipeActions(edge: .leading) {
               Button(action: {
-                  selectedCategory = category
-                  showingEditCategorySheet = true
+                selectedCategory = category
+                showingEditCategorySheet = true
               }) {
-                  Label("Edit", systemImage: "pencil")
+                Label("Edit", systemImage: "pencil")
               }
               .tint(.blue)
-          }
-          .sheet(isPresented: $showingEditCategorySheet) {
+            }
+            .sheet(isPresented: $showingEditCategorySheet) {
               if let categoryToEdit = selectedCategory {
-                  CategorySheet(
-                      isPresented: $showingEditCategorySheet,
-                      categoryName: categoryToEdit.name,
-                      onSave: { updatedName in
-                          _ = DatabaseHelper.shared.updateCategory(id: categoryToEdit.id, name: updatedName)
-                          categories = DatabaseHelper.shared.fetchCategories()
-                      }
-                  )
+                CategorySheet(
+                  isPresented: $showingEditCategorySheet,
+                  categoryName: categoryToEdit.name,
+                  onSave: { updatedName in
+                    _ = DatabaseHelper.shared.updateCategory(
+                      id: categoryToEdit.id, name: updatedName)
+                    categories = DatabaseHelper.shared.fetchCategories()
+                  }
+                )
               }
-          }
+            }
           }
           .onDelete(perform: deleteCategory)
         } else {
@@ -99,7 +100,10 @@ struct CategoryPicker: View {
       .sheet(isPresented: $showingAddSheet) {
         AddExerciseTypeSheet(isPresented: $showingAddSheet)
       }
-      .confirmationDialog("Are you sure you want to delete the \(categoryToDelete?.name ?? "???") category?", isPresented: $showingDeleteConfirmation, titleVisibility: .visible) {
+      .confirmationDialog(
+        "Are you sure you want to delete the \(categoryToDelete?.name ?? "???") category?",
+        isPresented: $showingDeleteConfirmation, titleVisibility: .visible
+      ) {
         Button("Delete", role: .destructive) {
           if let category = categoryToDelete {
             _ = DatabaseHelper.shared.deleteCategory(id: category.id)
@@ -110,7 +114,7 @@ struct CategoryPicker: View {
       }
     }
   }
-  
+
   private func deleteCategory(at offsets: IndexSet) {
     for index in offsets {
       categoryToDelete = categories[index]
