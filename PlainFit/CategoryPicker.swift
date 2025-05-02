@@ -9,6 +9,10 @@ struct CategoryPicker: View {
   @State private var exerciseTypes: [ExerciseType] = []
   @State private var showingAddSheet = false
   @State private var searchText = ""
+  @State private var selectedCategory: Category?
+  @State private var showingEditCategorySheet = false
+  @State private var showingDeleteConfirmation = false
+  @State private var categoryToDelete: Category?
 
   init(selectedDate: Date, showCategoryPicker: Binding<Bool>, showEditExerciseSet: Binding<Bool>) {
     self.selectedDate = selectedDate
@@ -38,7 +42,29 @@ struct CategoryPicker: View {
             ) {
               Text(category.name)
             }
+            .swipeActions(edge: .leading) {
+              Button(action: {
+                  selectedCategory = category
+                  showingEditCategorySheet = true
+              }) {
+                  Label("Edit", systemImage: "pencil")
+              }
+              .tint(.blue)
           }
+          .sheet(isPresented: $showingEditCategorySheet) {
+              if let categoryToEdit = selectedCategory {
+                  CategorySheet(
+                      isPresented: $showingEditCategorySheet,
+                      categoryName: categoryToEdit.name,
+                      onSave: { updatedName in
+                          _ = DatabaseHelper.shared.updateCategory(id: categoryToEdit.id, name: updatedName)
+                          categories = DatabaseHelper.shared.fetchCategories()
+                      }
+                  )
+              }
+          }
+          }
+          .onDelete(perform: deleteCategory)
         } else {
           ForEach(filteredExercises, id: \.self) { exerciseType in
             NavigationLink(
@@ -73,6 +99,22 @@ struct CategoryPicker: View {
       .sheet(isPresented: $showingAddSheet) {
         AddExerciseTypeSheet(isPresented: $showingAddSheet)
       }
+      .confirmationDialog("Are you sure you want to delete the \(categoryToDelete?.name ?? "???") category?", isPresented: $showingDeleteConfirmation, titleVisibility: .visible) {
+        Button("Delete", role: .destructive) {
+          if let category = categoryToDelete {
+            _ = DatabaseHelper.shared.deleteCategory(id: category.id)
+            categories = DatabaseHelper.shared.fetchCategories()
+          }
+        }
+        Button("Cancel", role: .cancel) {}
+      }
+    }
+  }
+  
+  private func deleteCategory(at offsets: IndexSet) {
+    for index in offsets {
+      categoryToDelete = categories[index]
+      showingDeleteConfirmation = true
     }
   }
 }

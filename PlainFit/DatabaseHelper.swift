@@ -612,4 +612,52 @@ class DatabaseHelper {
         sqlite3_finalize(queryStatement)
         return entries
     }
+    func deleteExerciseType(id: Int32) -> Bool {
+        let deleteStatementString = "DELETE FROM exercise_types WHERE id = ?"
+        var deleteStatement: OpaquePointer?
+
+        if sqlite3_prepare_v2(db, deleteStatementString, -1, &deleteStatement, nil) == SQLITE_OK {
+            sqlite3_bind_int(deleteStatement, 1, id)
+
+            if sqlite3_step(deleteStatement) == SQLITE_DONE {
+                sqlite3_finalize(deleteStatement)
+                return true
+            }
+        }
+        sqlite3_finalize(deleteStatement)
+        return false
+    }
+    
+    func deleteCategory(id: Int32) -> Bool {
+        let deleteStatementString = "DELETE FROM categories WHERE id = ?"
+        var deleteStatement: OpaquePointer?
+
+        if sqlite3_prepare_v2(db, deleteStatementString, -1, &deleteStatement, nil) == SQLITE_OK {
+            sqlite3_bind_int(deleteStatement, 1, id)
+
+            if sqlite3_step(deleteStatement) == SQLITE_DONE {
+                sqlite3_finalize(deleteStatement)
+                return true
+            }
+        }
+        sqlite3_finalize(deleteStatement)
+        return false
+    }
+
+    func updateCategory(id: Int32, name: String) -> Bool {
+        let updateStatementString = "UPDATE categories SET name = ? WHERE id = ?"
+        var updateStatement: OpaquePointer?
+
+        if sqlite3_prepare_v2(db, updateStatementString, -1, &updateStatement, nil) == SQLITE_OK {
+            sqlite3_bind_text(updateStatement, 1, (name as NSString).utf8String, -1, nil)
+            sqlite3_bind_int(updateStatement, 2, id)
+
+            if sqlite3_step(updateStatement) == SQLITE_DONE {
+                sqlite3_finalize(updateStatement)
+                return true
+            }
+        }
+        sqlite3_finalize(updateStatement)
+        return false
+    }
 }
