@@ -490,6 +490,20 @@ class DatabaseHelper {
         return false
     }
 
+    func deleteEntriesBySetId(setId: Int32) {
+        let deleteStatementString = "DELETE FROM fitness_entries WHERE set_id = ?"
+        var deleteStatement: OpaquePointer?
+        
+        if sqlite3_prepare_v2(db, deleteStatementString, -1, &deleteStatement, nil) == SQLITE_OK {
+            sqlite3_bind_int(deleteStatement, 1, setId)
+            
+            if sqlite3_step(deleteStatement) != SQLITE_DONE {
+                print("Error deleting entries for set_id: \(setId)")
+            }
+        }
+        sqlite3_finalize(deleteStatement)
+    }
+    
     func exportToCSV() -> String {
         var csvString = "ID,Exercise Name,Duration,Date,set_id,Reps,Distance,Distance Unit,Weight,Weight Unit\n"
         let query = "SELECT * FROM fitness_entries ORDER BY date DESC"
@@ -550,5 +564,47 @@ class DatabaseHelper {
         }
         sqlite3_finalize(queryStatement)
         return exerciseTypes
+    }
+
+    func fetchEntriesBySetId(setId: Int32) -> [FitnessEntry] {
+        var entries: [FitnessEntry] = []
+        let queryStatementString = "SELECT * FROM fitness_entries WHERE set_id = ?"
+        var queryStatement: OpaquePointer?
+
+        if sqlite3_prepare_v2(db, queryStatementString, -1, &queryStatement, nil) == SQLITE_OK {
+            sqlite3_bind_int(queryStatement, 1, setId)
+
+            while sqlite3_step(queryStatement) == SQLITE_ROW {
+                let id = sqlite3_column_int(queryStatement, 0)
+                let exerciseName = String(cString: sqlite3_column_text(queryStatement, 1))
+                let duration = sqlite3_column_int(queryStatement, 2)
+                let timestamp = sqlite3_column_int(queryStatement, 3)
+                let set_id = sqlite3_column_int(queryStatement, 4)
+                let reps = sqlite3_column_int(queryStatement, 5)
+                let date = Date(timeIntervalSince1970: TimeInterval(timestamp))
+
+                var distance: Float?
+                var distanceUnit: String?
+                var weight: Float?
+                var weightUnit: String?
+
+                if sqlite3_column_type(queryStatement, 6) != SQLITE_NULL {
+                    distance = Float(sqlite3_column_double(queryStatement, 6))
+                }
+                if sqlite3_column_type(queryStatement, 7) != SQLITE_NULL {
+                    distanceUnit = String(cString: sqlite3_column_text(queryStatement, 7))
+                }
+                if sqlite3_column_type(queryStatement, 8) != SQLITE_NULL {
+                    weight = Float(sqlite3_column_double(queryStatement, 8))
+                }
+                if sqlite3_column_type(queryStatement, 9) != SQLITE_NULL {
+                    weightUnit = String(cString: sqlite3_column_text(queryStatement, 9))
+                }
+
+                entries.append(FitnessEntry(id: id, exerciseName: exerciseName, duration: duration, date: date, set_id: set_id, reps: reps, distance: distance, distanceUnit: distanceUnit, weight: weight, weightUnit: weightUnit))
+            }
+        }
+        sqlite3_finalize(queryStatement)
+        return entries
     }
 }
