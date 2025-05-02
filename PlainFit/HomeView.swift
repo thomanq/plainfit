@@ -19,6 +19,8 @@ struct HomeView: View {
   @State private var showingCategorySheet = false
   @State private var newCategoryName = ""
   @State private var showCategoryPicker: Bool = false
+  @State private var showEditExerciseSet: Bool = false
+  @State private var editExerciseSetID: Int32 = 0
   @State private var showingCalendar = false
   @State private var showingSettings = false
 
@@ -182,16 +184,37 @@ struct HomeView: View {
                   Label("Delete", systemImage: "trash")
                 }
               }
+              .swipeActions(edge: .leading, allowsFullSwipe: true) {
+
+                Button(action: {
+                  editExerciseSetID = setId
+                  showEditExerciseSet = true
+                }) {
+                  Label("Edit", systemImage: "pencil")
+                }
+                .tint(.blue)
+
+              }
             }
           }
           .listStyle(PlainListStyle())
         }
-
+        NavigationLink(
+          destination: AddExerciseEntryView(
+            exerciseType: nil,
+            selectedDate: currentDate,
+            showCategoryPicker: $showCategoryPicker,
+            showEditExerciseSet: $showEditExerciseSet,
+            setID: editExerciseSetID),
+          isActive: $showEditExerciseSet
+        ) {
+          EmptyView()
+        }
         VStack {
           Spacer()
           NavigationLink(
             destination: CategoryPicker(
-              selectedDate: currentDate, showCategoryPicker: $showCategoryPicker),
+              selectedDate: currentDate, showCategoryPicker: $showCategoryPicker, showEditExerciseSet: $showEditExerciseSet,),
             isActive: $showCategoryPicker
           ) {
             Image(systemName: "plus.circle.fill")
