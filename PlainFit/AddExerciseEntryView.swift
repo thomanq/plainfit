@@ -20,6 +20,11 @@ struct AddExerciseEntryView: View {
     private var distanceUnits: [String] = []
     private var weightUnits: [String] = []
 
+    @State private var exercises: [ExerciseEntry] = []
+    @State private var isEditing: Bool = false
+    @State private var editingExerciseID: UUID? = nil
+    @State private var setID: Int32 = DatabaseHelper.shared.generateSetID()
+
     init(exerciseType: ExerciseType, selectedDate: Date, showCategoryPicker: Binding<Bool>) {
         self.exerciseType = exerciseType
         _showCategoryPicker = showCategoryPicker
@@ -42,7 +47,7 @@ struct AddExerciseEntryView: View {
             TextField("Exercise Name", text: .constant(exerciseType.name))
                 .disabled(true)
             DatePicker("Date and Time", selection: $exerciseDate)
-            
+
             if exerciseType.type.contains("time") {
                 Section(header: Text("Duration")) {
                     HStack {
@@ -109,18 +114,59 @@ struct AddExerciseEntryView: View {
                     }
                 }
             }
+            Button(action: isEditing ? saveEditedExercise : addExercise) {
+                Text(isEditing ? "Edit Exercise" : "Add Exercise to Set")
+            }
+            if isEditing {
+                Button(action: cancelEdit) {
+                    Text("Cancel")
+                        .foregroundColor(.red)
+                }
+            }
+            Section(header: Text("Exercises in Set")) {
+                List {
+                    ForEach(exercises) { exercise in
+                        VStack(alignment: .leading) {
+                            Text(exercise.name)
+                            if exercise.duration > 0 {
+                                Text("Duration: \(formatDuration(exercise.duration))")
+                            }
+                            if exercise.reps > 0 {
+                                Text("Reps: \(exercise.reps)")
+                            }
+                            if let distance = exercise.distance, let unit = exercise.distanceUnit {
+                                Text("Distance: \(formatValue(distance)) \(unit)")
+                            }
+                            if let weight = exercise.weight, let unit = exercise.weightUnit {
+                                Text("Weight: \(formatValue(weight)) \(unit)")
+                            }
+                        }
+                        .swipeActions(edge: .leading) {
+                            Button(action: {
+                                editExercise(exercise)
+                            }) {
+                                Label("Edit", systemImage: "pencil")
+                            }
+                            .tint(.blue)
+                        }
+                    }
+                    .onDelete(perform: deleteExercise)
+                    .onMove(perform: moveExercise)
+                }
+                .environment(
+                    \.editMode, 
+                    .constant(EditMode.active)
+                )
+            }
 
             Button(action: saveExercise) {
-                Text("Save Exercise")
+                Text("Save Set")
             }
         }
         .navigationTitle("Add Exercise")
     }
 
-    private func saveExercise() {
-        guard !exerciseType.name.isEmpty else { return }
-
-        // Convert HH:MM:SS:MS to milliseconds
+    private func addExercise() {
         let hoursMs = (Int32(hours) ?? 0) * 3_600_000
         let minutesMs = (Int32(minutes) ?? 0) * 60000
         let secondsMs = (Int32(seconds) ?? 0) * 1000
@@ -130,19 +176,129 @@ struct AddExerciseEntryView: View {
         let distanceValue = Float(distance)
         let weightValue = Float(weight)
 
-        if let entryId = DatabaseHelper.shared.insertEntry(
-            exerciseName: exerciseType.name,
+        let newExercise = ExerciseEntry(
+            name: exerciseType.name,
             duration: totalDurationMs,
-            date: exerciseDate,
-            sets: 0,
             reps: Int32(reps) ?? 0,
             distance: distanceValue,
             distanceUnit: !distance.isEmpty ? distanceUnit : nil,
             weight: weightValue,
             weightUnit: !weight.isEmpty ? weightUnit : nil
-        ) {
-            // Handle successful save
+        )
+
+        exercises.append(newExercise)
+
+        // Clear input fields
+        clearFields()
+    }
+
+    private func saveExercise() {
+        guard !exercises.isEmpty else { return }
+
+        for exercise in exercises {
+            _ = DatabaseHelper.shared.insertEntry(
+                exerciseName: exercise.name,
+                duration: exercise.duration,
+                date: exerciseDate,
+                sets: setID, // Use the generated set ID
+                reps: exercise.reps,
+                distance: exercise.distance,
+                distanceUnit: exercise.distanceUnit,
+                weight: exercise.weight,
+                weightUnit: exercise.weightUnit
+            )
         }
+
         showCategoryPicker = false
     }
+
+    private func deleteExercise(at offsets: IndexSet) {
+        exercises.remove(atOffsets: offsets)
+    }
+
+    private func editExercise(_ exercise: ExerciseEntry) {
+        isEditing = true
+        editingExerciseID = exercise.id
+
+        // Restore values to fields
+        hours = String(exercise.duration / 3_600_000)
+        hours = hours != "0" ? hours : ""
+        minutes = String((exercise.duration % 3_600_000) / 60000)
+        minutes = minutes != "0" ? minutes : ""
+        seconds = String((exercise.duration % 60000) / 1000)
+        seconds = seconds != "0" ? seconds : ""
+        milliseconds = String(exercise.duration % 1000)
+        milliseconds = milliseconds != "0" ? milliseconds : ""
+
+        reps = exercise.reps > 0 ? String(exercise.reps) : ""
+        distance = exercise.distance != nil ? String(exercise.distance!) : ""
+        distanceUnit = exercise.distanceUnit ?? (unitSystem == .imperial ? "mi" : "km")
+        weight = exercise.weight != nil ? String(exercise.weight!) : ""
+        weightUnit = exercise.weightUnit ?? (unitSystem == .imperial ? "lbs" : "kg")
+    }
+
+    private func saveEditedExercise() {
+        guard let editingID = editingExerciseID else { return }
+
+        if let index = exercises.firstIndex(where: { $0.id == editingID }) {
+            exercises[index] = ExerciseEntry(
+                name: exerciseType.name,
+                duration: calculateDuration(),
+                reps: Int32(reps) ?? 0,
+                distance: Float(distance),
+                distanceUnit: !distance.isEmpty ? distanceUnit : nil,
+                weight: Float(weight),
+                weightUnit: !weight.isEmpty ? weightUnit : nil
+            )
+        }
+
+        cancelEdit()
+    }
+
+    private func cancelEdit() {
+        isEditing = false
+        editingExerciseID = nil
+        clearFields()
+    }
+
+    private func clearFields() {
+        hours = ""
+        minutes = ""
+        seconds = ""
+        milliseconds = ""
+        reps = ""
+        distance = ""
+        weight = ""
+    }
+
+    private func calculateDuration() -> Int32 {
+        let hoursMs = (Int32(hours) ?? 0) * 3_600_000
+        let minutesMs = (Int32(minutes) ?? 0) * 60000
+        let secondsMs = (Int32(seconds) ?? 0) * 1000
+        let ms = Int32(milliseconds) ?? 0
+        return hoursMs + minutesMs + secondsMs + ms
+    }
+
+    private func moveExercise(from source: IndexSet, to destination: Int) {
+        exercises.move(fromOffsets: source, toOffset: destination)
+    }
+
+    private func formatValue(_ value: Float?) -> String {
+        guard let value = value else { return "" }
+        var formattedValue = String(value)
+        formattedValue = formattedValue.replacingOccurrences(of: "0+$", with: "", options: .regularExpression)
+        formattedValue = formattedValue.replacingOccurrences(of: "\\.$", with: "", options: .regularExpression)
+        return formattedValue
+    }
+}
+
+struct ExerciseEntry: Identifiable {
+    let id = UUID()
+    var name: String
+    var duration: Int32
+    var reps: Int32
+    var distance: Float?
+    var distanceUnit: String?
+    var weight: Float?
+    var weightUnit: String?
 }

@@ -150,6 +150,21 @@ class DatabaseHelper {
         }
     }
 
+    func generateSetID() -> Int32 {
+        let query = "SELECT MAX(sets) FROM fitness_entries"
+        var queryStatement: OpaquePointer?
+        var maxSetID: Int32 = 0
+
+        if sqlite3_prepare_v2(db, query, -1, &queryStatement, nil) == SQLITE_OK {
+            if sqlite3_step(queryStatement) == SQLITE_ROW {
+                maxSetID = sqlite3_column_int(queryStatement, 0)
+            }
+        }
+        sqlite3_finalize(queryStatement)
+
+        return maxSetID + 1
+    }
+
     private func loadExercisesFromJSON() -> ExercisesData? {
         guard let jsonPath = Bundle.main.path(forResource: "exercises", ofType: "json"),
               let jsonContent = try? String(contentsOfFile: jsonPath, encoding: .utf8),
@@ -168,40 +183,40 @@ class DatabaseHelper {
     func insertEntry(exerciseName: String, duration: Int32, date: Date, sets: Int32, reps: Int32, distance: Float? = nil, distanceUnit: String? = nil, weight: Float? = nil, weightUnit: String? = nil) -> Int32? {
         let insertStatementString = "INSERT INTO fitness_entries (exercise_name, duration, date, sets, reps, distance, distance_unit, weight, weight_unit) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)"
         var insertStatement: OpaquePointer?
-        
+
         if sqlite3_prepare_v2(db, insertStatementString, -1, &insertStatement, nil) == SQLITE_OK {
             let timestamp = Int32(date.timeIntervalSince1970)
-            
+
             sqlite3_bind_text(insertStatement, 1, (exerciseName as NSString).utf8String, -1, nil)
             sqlite3_bind_int(insertStatement, 2, duration)
             sqlite3_bind_int(insertStatement, 3, timestamp)
-            sqlite3_bind_int(insertStatement, 4, sets)
+            sqlite3_bind_int(insertStatement, 4, sets) // Use setID here
             sqlite3_bind_int(insertStatement, 5, reps)
-            
+
             if let distance = distance {
                 sqlite3_bind_double(insertStatement, 6, Double(distance))
             } else {
                 sqlite3_bind_null(insertStatement, 6)
             }
-            
+
             if let distanceUnit = distanceUnit {
                 sqlite3_bind_text(insertStatement, 7, (distanceUnit as NSString).utf8String, -1, nil)
             } else {
                 sqlite3_bind_null(insertStatement, 7)
             }
-            
+
             if let weight = weight {
                 sqlite3_bind_double(insertStatement, 8, Double(weight))
             } else {
                 sqlite3_bind_null(insertStatement, 8)
             }
-            
+
             if let weightUnit = weightUnit {
                 sqlite3_bind_text(insertStatement, 9, (weightUnit as NSString).utf8String, -1, nil)
             } else {
                 sqlite3_bind_null(insertStatement, 9)
             }
-            
+
             if sqlite3_step(insertStatement) == SQLITE_DONE {
                 let entryId = sqlite3_last_insert_rowid(db)
                 sqlite3_finalize(insertStatement)
