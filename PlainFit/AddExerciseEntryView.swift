@@ -28,6 +28,7 @@ struct AddExerciseEntryView: View {
   @State private var setID: Int32
   @State private var showErrorModal: Bool = false
   @State private var errorMessage: String = ""
+  @State private var showingDeleteConfirmation: Bool = false
 
   init(
     exerciseType: ExerciseType? = nil, selectedDate: Date, showCategoryPicker: Binding<Bool>,
@@ -206,6 +207,24 @@ struct AddExerciseEntryView: View {
         }
       }) {
         Text(showEditExerciseSet ? "Edit Set" : "Save Set")
+      }
+      if showEditExerciseSet {
+        Section {
+          Button("Delete Set", role: .destructive) {
+            showingDeleteConfirmation = true
+          }
+          .confirmationDialog(
+            "Are you sure you want to delete this set?",
+            isPresented: $showingDeleteConfirmation,
+            titleVisibility: .visible
+          ) {
+            Button("Delete", role: .destructive) {
+              DatabaseHelper.shared.deleteEntriesBySetId(setId: setID)
+              dismiss()
+            }
+            Button("Cancel", role: .cancel) {}
+          }
+        }
       }
     }
     .alert(isPresented: $showErrorModal) {

@@ -89,7 +89,7 @@ struct ExerciseTypePickerView: View {
       ) {
         Button("Delete", role: .destructive) {
           if let exerciseType = exerciseTypeToDelete {
-            DatabaseHelper.shared.deleteExerciseType(id: exerciseType.id)
+            _ = DatabaseHelper.shared.deleteExerciseType(id: exerciseType.id)
             exerciseTypes = DatabaseHelper.shared.getExerciseTypesForCategory(
               categoryId: category.id)
           }

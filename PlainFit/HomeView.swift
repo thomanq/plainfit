@@ -23,6 +23,8 @@ struct HomeView: View {
   @State private var editExerciseSetID: Int32 = 0
   @State private var showingCalendar = false
   @State private var showingSettings = false
+  @State private var showingDeleteConfirmation = false
+  @State private var setToDelete: Int32? = nil
 
   private func export() {
     let csvString = DatabaseHelper.shared.exportToCSV()
@@ -256,6 +258,20 @@ struct HomeView: View {
         categories = DatabaseHelper.shared.fetchCategories()
       }
       .navigationBarTitleDisplayMode(.inline)
+      .confirmationDialog(
+        "Are you sure you want to delete this exercise set?",
+        isPresented: $showingDeleteConfirmation,
+        titleVisibility: .visible
+      ) {
+        Button("Delete", role: .destructive) {
+          if let setId = setToDelete {
+            DatabaseHelper.shared.deleteEntriesBySetId(setId: setId)
+            fitnessEntries = DatabaseHelper.shared.fetchEntries(for: currentDate)
+          }
+          setToDelete = nil
+        }
+        Button("Cancel", role: .cancel) {}
+      }
     }
     .sheet(isPresented: $showingCalendar) {
       CalendarView(selectedDate: $currentDate)
@@ -273,7 +289,7 @@ struct HomeView: View {
   }
 
   private func deleteSet(setId: Int32) {
-    DatabaseHelper.shared.deleteEntriesBySetId(setId: setId)
-    fitnessEntries = DatabaseHelper.shared.fetchEntries(for: currentDate)
+    showingDeleteConfirmation = true
+    setToDelete = setId
   }
 }
