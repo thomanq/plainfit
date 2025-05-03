@@ -73,18 +73,18 @@ struct ExerciseTypePickerView: View {
         exerciseTypes = DatabaseHelper.shared.getExerciseTypesForCategory(categoryId: category.id)
       }
       .sheet(
-        isPresented: $showingAddSheet,
+        item: $selectedExerciseType,
         onDismiss: {
           exerciseTypes = DatabaseHelper.shared.getExerciseTypesForCategory(categoryId: category.id)
           selectedExerciseType = nil
         }
-      ) {
+      ) { exerciseType in
         AddExerciseTypeSheet(
-          isPresented: $showingAddSheet, defaultCategoryId: category.id,
-          exerciseTypeToEdit: selectedExerciseType)
+          defaultCategoryId: category.id,
+          exerciseTypeToEdit: exerciseType)
       }
       .confirmationDialog(
-        "Are you sure you want to delete the \(exerciseTypeToDelete?.name ?? "???") exercise type?",
+        "Are you sure you want to delete the '\(exerciseTypeToDelete?.name ?? "???")' exercise type?",
         isPresented: $showingDeleteConfirmation, titleVisibility: .visible
       ) {
         Button("Delete", role: .destructive) {

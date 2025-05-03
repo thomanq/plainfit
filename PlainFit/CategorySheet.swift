@@ -2,7 +2,6 @@ import SwiftUI
 
 struct CategorySheet: View {
   @Environment(\.dismiss) var dismiss
-  @Binding var isPresented: Bool
   @State var categoryName: String
   let onSave: (String) -> Void
 
@@ -14,14 +13,13 @@ struct CategorySheet: View {
         Button("Save") {
           if !categoryName.isEmpty {
             onSave(categoryName)
-            isPresented = false
           }
         }
       }
       .navigationTitle("Category")
       .navigationBarItems(
         trailing: Button("Cancel") {
-          isPresented = false
+          dismiss()
         })
     }
   }
