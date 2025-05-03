@@ -11,10 +11,18 @@ struct ExercisesData: Codable {
   let exercises: [ExerciseCategory]
 }
 
-struct Category: Identifiable {
+struct Category: Identifiable, Hashable {
   let id: Int32
   let name: String
-  let isSelected: Bool
+
+  func hash(into hasher: inout Hasher) {
+    hasher.combine(id)
+    hasher.combine(name)
+
+  }
+  static func == (lhs: Category, rhs: Category) -> Bool {
+    return lhs.id == rhs.id && lhs.name == rhs.name
+  }
 }
 
 struct FitnessEntry: Identifiable {
@@ -335,7 +343,7 @@ class DatabaseHelper {
       while sqlite3_step(queryStatement) == SQLITE_ROW {
         let id = sqlite3_column_int(queryStatement, 0)
         let name = String(cString: sqlite3_column_text(queryStatement, 1))
-        categories.append(Category(id: id, name: name, isSelected: false))
+        categories.append(Category(id: id, name: name))
       }
     }
     sqlite3_finalize(queryStatement)
@@ -375,7 +383,7 @@ class DatabaseHelper {
       while sqlite3_step(queryStatement) == SQLITE_ROW {
         let id = sqlite3_column_int(queryStatement, 0)
         let name = String(cString: sqlite3_column_text(queryStatement, 1))
-        categories.append(Category(id: id, name: name, isSelected: false))
+        categories.append(Category(id: id, name: name))
       }
     }
     sqlite3_finalize(queryStatement)
@@ -453,7 +461,7 @@ class DatabaseHelper {
       while sqlite3_step(queryStatement) == SQLITE_ROW {
         let id = sqlite3_column_int(queryStatement, 0)
         let name = String(cString: sqlite3_column_text(queryStatement, 1))
-        categories.append(Category(id: id, name: name, isSelected: false))
+        categories.append(Category(id: id, name: name))
       }
     }
     sqlite3_finalize(queryStatement)

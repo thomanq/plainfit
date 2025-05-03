@@ -10,7 +10,6 @@ struct CategoryPicker: View {
   @State private var showingAddSheet = false
   @State private var searchText = ""
   @State private var selectedCategory: Category?
-  @State private var showingEditCategorySheet = false
   @State private var showingDeleteConfirmation = false
   @State private var categoryToDelete: Category?
 
@@ -28,10 +27,9 @@ struct CategoryPicker: View {
     VStack {
       SearchBar(text: $searchText)
         .padding()
-
       List {
         if searchText.isEmpty {
-          ForEach(categories) { category in
+          ForEach(categories, id: \.self) { category in
             NavigationLink(
               destination: ExerciseTypePickerView(
                 category: category,
@@ -45,24 +43,10 @@ struct CategoryPicker: View {
             .swipeActions(edge: .leading) {
               Button(action: {
                 selectedCategory = category
-                showingEditCategorySheet = true
               }) {
                 Label("Edit", systemImage: "pencil")
               }
               .tint(.blue)
-            }
-            .sheet(isPresented: $showingEditCategorySheet) {
-              if let categoryToEdit = selectedCategory {
-                CategorySheet(
-                  isPresented: $showingEditCategorySheet,
-                  categoryName: categoryToEdit.name,
-                  onSave: { updatedName in
-                    _ = DatabaseHelper.shared.updateCategory(
-                      id: categoryToEdit.id, name: updatedName)
-                    categories = DatabaseHelper.shared.fetchCategories()
-                  }
-                )
-              }
             }
           }
           .onDelete(perform: deleteCategory)
@@ -80,6 +64,21 @@ struct CategoryPicker: View {
             }
           }
         }
+      }.sheet(
+        item: $selectedCategory,
+        onDismiss: {
+          selectedCategory = nil
+        }
+      ) { category in
+        CategorySheet(
+          categoryName: category.name,
+          onSave: { updatedName in
+            _ = DatabaseHelper.shared.updateCategory(
+              id: category.id, name: updatedName)
+            categories = DatabaseHelper.shared.fetchCategories()
+            selectedCategory = nil
+          }
+        )
       }
       .toolbar {
         ToolbarItem(placement: .principal) {
@@ -98,10 +97,10 @@ struct CategoryPicker: View {
         exerciseTypes = DatabaseHelper.shared.fetchAllExerciseTypes()
       }
       .sheet(isPresented: $showingAddSheet) {
-        AddExerciseTypeSheet(isPresented: $showingAddSheet)
+        AddExerciseTypeSheet()
       }
       .confirmationDialog(
-        "Are you sure you want to delete the \(categoryToDelete?.name ?? "???") category?",
+        "Are you sure you want to delete the '\(categoryToDelete?.name ?? "???")' category?",
         isPresented: $showingDeleteConfirmation, titleVisibility: .visible
       ) {
         Button("Delete", role: .destructive) {

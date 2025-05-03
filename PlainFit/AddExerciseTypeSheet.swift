@@ -2,7 +2,6 @@ import SwiftUI
 
 struct AddExerciseTypeSheet: View {
   @Environment(\.dismiss) var dismiss
-  @Binding var isPresented: Bool
   @State private var newName = ""
   @State private var newType = ""
   @State private var selectedCategoryId: Int32?
@@ -18,10 +17,9 @@ struct AddExerciseTypeSheet: View {
   let exerciseTypeToEdit: ExerciseType?
 
   init(
-    isPresented: Binding<Bool>, defaultCategoryId: Int32? = nil,
+    defaultCategoryId: Int32? = nil,
     exerciseTypeToEdit: ExerciseType? = nil
   ) {
-    _isPresented = isPresented
     _selectedCategoryId = State(initialValue: defaultCategoryId)
     self.exerciseTypeToEdit = exerciseTypeToEdit
 
@@ -103,7 +101,7 @@ struct AddExerciseTypeSheet: View {
               newType = ""
               selectedCategoryId = nil
               selectedTypes.removeAll()
-              isPresented = false
+              dismiss()
             }
           }
         }
@@ -119,7 +117,7 @@ struct AddExerciseTypeSheet: View {
             ) {
               Button("Delete", role: .destructive) {
                 DatabaseHelper.shared.deleteExerciseType(id: exerciseType.id)
-                isPresented = false
+                dismiss()
               }
               Button("Cancel", role: .cancel) {}
             }
@@ -136,17 +134,17 @@ struct AddExerciseTypeSheet: View {
       }
       .navigationBarItems(
         trailing: Button("Cancel") {
-          isPresented = false
+          dismiss()
         }
       )
       .sheet(isPresented: $showingNewCategorySheet) {
         CategorySheet(
-          isPresented: $showingNewCategorySheet,
           categoryName: newCategoryName,
           onSave: { name in
             if DatabaseHelper.shared.insertCategory(name: name) != nil {
               categories = DatabaseHelper.shared.fetchCategories()
               newCategoryName = ""
+              showingNewCategorySheet = false
             }
           }
         )
