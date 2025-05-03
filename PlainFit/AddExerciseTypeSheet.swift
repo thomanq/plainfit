@@ -85,10 +85,10 @@ struct AddExerciseTypeSheet: View {
               showError = true
             } else {
               if let exerciseType = exerciseTypeToEdit {
-                DatabaseHelper.shared.updateExerciseType(
+                _ = DatabaseHelper.shared.updateExerciseType(
                   id: exerciseType.id, name: newName, type: newType)
                 if let categoryId = selectedCategoryId {
-                  DatabaseHelper.shared.updateExerciseTypeCategory(
+                  _ = DatabaseHelper.shared.updateExerciseTypeCategory(
                     exerciseTypeId: exerciseType.id, categoryId: categoryId)
                 }
               } else {
