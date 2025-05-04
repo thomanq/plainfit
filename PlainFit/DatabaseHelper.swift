@@ -1,5 +1,6 @@
 import Foundation
 import GRDB
+import TabularData
 
 typealias CategoryName = String
 typealias ExerciseTypeName = String
@@ -86,7 +87,7 @@ struct PartialFitnessEntry: Encodable, PersistableRecord {
   let exerciseType: String
   let duration: Int32
   let date: Date
-  let set_id: Int64
+  let setId: Int64
   let reps: Int32
   let distance: Float?
   let distanceUnit: String?
@@ -102,7 +103,7 @@ struct PartialFitnessEntry: Encodable, PersistableRecord {
       t.column("exerciseType", .text).notNull()
       t.column("duration", .integer).notNull()
       t.column("date", .datetime).notNull()
-      t.column("set_id", .integer).notNull()
+      t.column("setId", .integer).notNull()
       t.column("reps", .integer).notNull()
       t.column("distance", .double)
       t.column("distanceUnit", .text)
@@ -113,20 +114,54 @@ struct PartialFitnessEntry: Encodable, PersistableRecord {
 }
 
 struct FitnessEntry: Identifiable, Codable, FetchableRecord, PersistableRecord {
+  static let databaseTableName = "fitness_entries"
+  static let dateFormatter: DateFormatter = {
+    let formatter = DateFormatter()
+    formatter.dateFormat = "yyyy-MM-dd HH:mm:ss"
+    return formatter
+  }()
+
   var id: Int64
   let exerciseName: String
   let exerciseType: String
   let duration: Int32  // Duration in milliseconds
   let date: Date
-  let set_id: Int64
+  let setId: Int64
   let reps: Int32
   let distance: Float?
   let distanceUnit: String?
   let weight: Float?
   let weightUnit: String?
 
-  // Add the table name to match PartialFitnessEntry
-  static let databaseTableName = "fitness_entries"
+  func toCSVRow() -> String {
+    let dateString = FitnessEntry.dateFormatter.string(from: date)
+    let distance = distance != nil ? String(distance!) : "N/A"
+    let distanceUnit = distanceUnit ?? "N/A"
+    let weight = weight != nil ? String(weight!) : "N/A"
+    let weightUnit = weightUnit ?? "N/A"
+
+    return
+      "\(id),\"\(exerciseName)\",\"\(exerciseType)\",\(duration),\"\(dateString)\",\(setId),\(reps),\(distance),\(distanceUnit),\(weight),\(weightUnit)\n"
+  }
+}
+
+func getFitnessEntriesHeaders() -> [String] {
+  let mirror = Mirror(
+    reflecting: FitnessEntry(
+      id: 0,
+      exerciseName: "",
+      exerciseType: "",
+      duration: 0,
+      date: Date(),
+      setId: 0,
+      reps: 0,
+      distance: nil,
+      distanceUnit: nil,
+      weight: nil,
+      weightUnit: nil
+    ))
+
+  return mirror.children.compactMap { $0.label }
 }
 
 // Junction table for many-to-many relationship between exercise types and categories
@@ -251,15 +286,15 @@ class DatabaseHelper {
     }
   }
 
-  func generateSetID() -> Int64 {
+  func generateSetId() -> Int64 {
     do {
       let maxSetID = try dbQueue.read { db in
-        let request = "SELECT MAX(set_id) FROM fitness_entries"
+        let request = "SELECT MAX(setId) FROM fitness_entries"
         return try Int64.fetchOne(db, sql: request) ?? 0
       }
       return maxSetID + 1
     } catch {
-      print("Error generating set ID: \(error)")
+      print("Error generating set Id: \(error)")
       return 1
     }
   }
@@ -269,7 +304,7 @@ class DatabaseHelper {
     exerciseType: String,
     duration: Int32,
     date: Date,
-    set_id: Int64,
+    setId: Int64,
     reps: Int32,
     distance: Float? = nil,
     distanceUnit: String? = nil,
@@ -282,7 +317,7 @@ class DatabaseHelper {
         exerciseType: exerciseType,
         duration: duration,
         date: date,
-        set_id: set_id,
+        setId: setId,
         reps: reps,
         distance: distance,
         distanceUnit: distanceUnit,
@@ -327,12 +362,12 @@ class DatabaseHelper {
       return try dbQueue.read { db in
         let request =
           FitnessEntry
-          .filter(Column("set_id") == setId)
+          .filter(Column("setId") == setId)
 
         return try request.fetchAll(db)
       }
     } catch {
-      print("Error fetching entries by set ID: \(error)")
+      print("Error fetching entries by set Id: \(error)")
       return []
     }
   }
@@ -342,11 +377,11 @@ class DatabaseHelper {
       try dbQueue.write { db in
         _ =
           try FitnessEntry
-          .filter(Column("set_id") == setId)
+          .filter(Column("setId") == setId)
           .deleteAll(db)
       }
     } catch {
-      print("Error deleting entries by set ID: \(error)")
+      print("Error deleting entries by set Id: \(error)")
     }
   }
 
@@ -583,34 +618,117 @@ class DatabaseHelper {
   }
 
   func exportToCSV() -> String {
-    var csvString =
-      "ID,Exercise Name,Exercise Type,Duration,Date,set_id,Reps,Distance,Distance Unit,Weight,Weight Unit\n"
-
+    var csvString = ""
     do {
+      let header = getFitnessEntriesHeaders().joined(separator: ",") + "\n"
+      csvString.append(header)
+
       let entries = try dbQueue.read { db in
         try FitnessEntry
-          .order(Column("date").desc)
+          .order(Column("date").asc)
           .fetchAll(db)
       }
 
-      let dateFormatter = DateFormatter()
-      dateFormatter.dateFormat = "yyyy-MM-dd HH:mm:ss"
-
       for entry in entries {
-        let dateString = dateFormatter.string(from: entry.date)
-        let distance = entry.distance != nil ? String(entry.distance!) : "N/A"
-        let distanceUnit = entry.distanceUnit ?? "N/A"
-        let weight = entry.weight != nil ? String(entry.weight!) : "N/A"
-        let weightUnit = entry.weightUnit ?? "N/A"
-
-        let row =
-          "\(entry.id),\"\(entry.exerciseName)\",\"\(entry.exerciseType)\",\(entry.duration),\"\(dateString)\",\(entry.set_id),\(entry.reps),\(distance),\(distanceUnit),\(weight),\(weightUnit)\n"
-        csvString.append(row)
+        csvString.append(entry.toCSVRow())
       }
     } catch {
       print("Error exporting to CSV: \(error)")
     }
 
     return csvString
+  }
+
+  func importFromCSV(csvString: String) -> Bool {
+    do {
+      let options = CSVReadingOptions(hasHeaderRow: true, delimiter: ",")
+      guard let csvData = csvString.data(using: .utf8) else {
+        return false
+      }
+      let dataFrame = try DataFrame(csvData: csvData, options: options)
+
+      let expectedHeaders = getFitnessEntriesHeaders()
+      let actualHeaders = dataFrame.columns.map { $0.name }
+      
+      guard Set(expectedHeaders) == Set(actualHeaders) else {
+        return false
+      }
+
+      try dbQueue.write { db in
+        try FitnessEntry.deleteAll(db)
+
+        for row in dataFrame.rows {
+          guard let duration = row["duration"] as? Int,
+                let setId = row["setId"] as? Int,
+                let reps = row["reps"] as? Int,
+                let exerciseName = row["exerciseName"] as? String,
+                let exerciseType = row["exerciseType"] as? String,
+                let dateString = row["date"] as? String else {
+            return false
+          }
+
+          guard let date = FitnessEntry.dateFormatter.date(from: dateString) else {
+            return false
+          }
+
+          let distance: Float? = {
+            if let val = row["distance"] as? Double {
+                return Float(val)
+            }
+            if let val = row["distance"] as? String, val.lowercased() != "nil" {
+                return Float(val)
+            }
+            return nil
+          }()
+          
+          let distanceUnit: String? = {
+            if let val = row["distanceUnit"] as? String, val.lowercased() != "nil" {
+                return val
+            }
+            return nil
+          }()
+          
+          let weight: Float? = {
+            if let val = row["weight"] as? Double {
+                return Float(val)
+            }
+            if let val = row["weight"] as? String, val.lowercased() != "nil" {
+                return Float(val)
+            }
+            return nil
+          }()
+          
+          let weightUnit: String? = {
+            if let val = row["weightUnit"] as? String, val.lowercased() != "nil" {
+                return val
+            }
+            return nil
+          }()
+
+          let partialEntry = PartialFitnessEntry(
+            exerciseName: exerciseName,
+            exerciseType: exerciseType,
+            duration: Int32(duration),
+            date: date,
+            setId: Int64(setId),
+            reps: Int32(reps),
+            distance: distance,
+            distanceUnit: distanceUnit,
+            weight: weight,
+            weightUnit: weightUnit
+          )
+
+          do {
+            try partialEntry.insert(db)
+          } catch {
+            return false
+          }
+        }
+        return true
+      }
+      return true
+    } catch {
+      return false
+    }
   }
 }
