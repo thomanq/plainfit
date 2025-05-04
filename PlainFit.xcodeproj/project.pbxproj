@@ -9,6 +9,7 @@
 /* Begin PBXBuildFile section */
 		E27491272DC3CBB500E398AC /* exercises.json in Resources */ = {isa = PBXBuildFile; fileRef = E27491262DC3CBB500E398AC /* exercises.json */; };
 		E294F3A02DC2CA3B0081480B /* LICENSE in Resources */ = {isa = PBXBuildFile; fileRef = E294F39F2DC2CA3B0081480B /* LICENSE */; };
+		E2A221682DC75EF700F59021 /* GRDB in Frameworks */ = {isa = PBXBuildFile; productRef = E2A221672DC75EF700F59021 /* GRDB */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -59,6 +60,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				E2A221682DC75EF700F59021 /* GRDB in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -121,6 +123,7 @@
 			);
 			name = PlainFit;
 			packageProductDependencies = (
+				E2A221672DC75EF700F59021 /* GRDB */,
 			);
 			productName = PlainFit;
 			productReference = E2B16C742DBE8DEA00722A4C /* PlainFit.app */;
@@ -204,6 +207,9 @@
 			);
 			mainGroup = E2B16C6B2DBE8DEA00722A4C;
 			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				E2A221662DC75EF700F59021 /* XCRemoteSwiftPackageReference "GRDB.swift" */,
+			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = E2B16C752DBE8DEA00722A4C /* Products */;
 			projectDirPath = "";
@@ -563,6 +569,25 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		E2A221662DC75EF700F59021 /* XCRemoteSwiftPackageReference "GRDB.swift" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/groue/GRDB.swift.git";
+			requirement = {
+				branch = master;
+				kind = branch;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		E2A221672DC75EF700F59021 /* GRDB */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = E2A221662DC75EF700F59021 /* XCRemoteSwiftPackageReference "GRDB.swift" */;
+			productName = GRDB;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = E2B16C6C2DBE8DEA00722A4C /* Project object */;
 }

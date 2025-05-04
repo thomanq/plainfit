@@ -15,16 +15,16 @@ struct HomeView: View {
   @State private var fitnessEntries: [FitnessEntry] = []
   @State private var currentDate: Date = Date()
   @State private var categories: [Category] = []
-  @State private var selectedCategoryId: Int32?
+  @State private var selectedCategoryId: Int64?
   @State private var showingCategorySheet = false
   @State private var newCategoryName = ""
   @State private var showCategoryPicker: Bool = false
   @State private var showEditExerciseSet: Bool = false
-  @State private var editExerciseSetID: Int32 = 0
+  @State private var editExerciseSetID: Int64 = 0
   @State private var showingCalendar = false
   @State private var showingSettings = false
   @State private var showingDeleteConfirmation = false
-  @State private var setToDelete: Int32? = nil
+  @State private var setToDelete: Int64? = nil
 
   private func export() {
     let csvString = DatabaseHelper.shared.exportToCSV()
@@ -288,7 +288,7 @@ struct HomeView: View {
       #selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
   }
 
-  private func deleteSet(setId: Int32) {
+  private func deleteSet(setId: Int64) {
     showingDeleteConfirmation = true
     setToDelete = setId
   }

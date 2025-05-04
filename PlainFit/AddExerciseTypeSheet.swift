@@ -4,7 +4,7 @@ struct AddExerciseTypeSheet: View {
   @Environment(\.dismiss) var dismiss
   @State private var newName = ""
   @State private var newType = ""
-  @State private var selectedCategoryId: Int32?
+  @State private var selectedCategoryId: Int64?
   @State private var categories: [Category] = []
   @State private var selectedTypes: Set<String> = []
   @State private var showingNewCategorySheet = false
@@ -17,7 +17,7 @@ struct AddExerciseTypeSheet: View {
   let exerciseTypeToEdit: ExerciseType?
 
   init(
-    defaultCategoryId: Int32? = nil,
+    defaultCategoryId: Int64? = nil,
     exerciseTypeToEdit: ExerciseType? = nil
   ) {
     _selectedCategoryId = State(initialValue: defaultCategoryId)
@@ -58,9 +58,9 @@ struct AddExerciseTypeSheet: View {
 
         HStack {
           Picker("Category", selection: $selectedCategoryId) {
-            Text("No Category").tag(nil as Int32?)
+            Text("No Category").tag(nil as Int64?)
             ForEach(categories) { category in
-              Text(category.name).tag(category.id as Int32?)
+              Text(category.name).tag(category.id as Int64?)
             }
           }
           .pickerStyle(.menu)
@@ -116,7 +116,7 @@ struct AddExerciseTypeSheet: View {
               isPresented: $showingDeleteConfirmation, titleVisibility: .visible
             ) {
               Button("Delete", role: .destructive) {
-                DatabaseHelper.shared.deleteExerciseType(id: exerciseType.id)
+                _ = DatabaseHelper.shared.deleteExerciseType(id: exerciseType.id)
                 dismiss()
               }
               Button("Cancel", role: .cancel) {}

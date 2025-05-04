@@ -1,5 +1,5 @@
 import Foundation
-import SQLite3
+import GRDB
 
 typealias CategoryName = String
 typealias ExerciseTypeName = String
@@ -11,39 +11,65 @@ struct ExercisesData: Codable {
   let exercises: [ExerciseCategory]
 }
 
-struct Category: Identifiable, Hashable {
-  let id: Int32
-  let name: String
+// Partial Category for insertion
+struct PartialCategory: Encodable, PersistableRecord {
+  var name: String
+  static let databaseTableName = "categories"
 
+  static func defineTable(_ db: Database) throws {
+    try db.create(table: databaseTableName, ifNotExists: true) { t in
+      t.autoIncrementedPrimaryKey("id")
+      t.column("name", .text).notNull().unique()
+    }
+  }
+}
+
+// MARK: - Record Models
+struct Category: Identifiable, Hashable, Codable, PersistableRecord, FetchableRecord {
+  var id: Int64
+  var name: String
+
+  // Add the table name property to match PartialCategory
+  static let databaseTableName = "categories"
+
+  // Hashable conformance
   func hash(into hasher: inout Hasher) {
     hasher.combine(id)
     hasher.combine(name)
-
   }
+
   static func == (lhs: Category, rhs: Category) -> Bool {
     return lhs.id == rhs.id && lhs.name == rhs.name
   }
+
 }
 
-struct FitnessEntry: Identifiable {
-  let id: Int32
-  let exerciseName: String
-  let exerciseType: String
-  let duration: Int32  // Duration in milliseconds
-  let date: Date
-  let set_id: Int32
-  let reps: Int32
-  let distance: Float?
-  let distanceUnit: String?
-  let weight: Float?
-  let weightUnit: String?
+// Partial ExerciseType for insertion
+struct PartialExerciseType: Encodable, PersistableRecord {
+  var name: String
+  var type: String
+  // Define table name explicitly
+  static let databaseTableName = "exercise_types"
+
+  // Setup table definition
+  static func defineTable(_ db: Database) throws {
+    try db.create(table: databaseTableName, ifNotExists: true) { t in
+      t.autoIncrementedPrimaryKey("id")
+      t.column("name", .text).notNull()
+      t.column("type", .text).notNull()
+    }
+  }
 }
 
-struct ExerciseType: Identifiable, Hashable {
-  let id: Int32
-  let name: String
-  let type: String
+struct ExerciseType: Identifiable, Hashable, Codable, PersistableRecord, FetchableRecord {
+  var id: Int64
+  var name: String
+  var type: String
 
+  // Add the table name to match PartialExerciseType
+  static let databaseTableName = "exercise_types"
+
+  // Hashable conformance
   func hash(into hasher: inout Hasher) {
     hasher.combine(id)
     hasher.combine(name)
@@ -55,140 +81,159 @@ struct ExerciseType: Identifiable, Hashable {
   }
 }
 
+// Partial FitnessEntry for insertion
+struct PartialFitnessEntry: Encodable, PersistableRecord {
+  let exerciseName: String
+  let exerciseType: String
+  let duration: Int32
+  let date: Date
+  let set_id: Int64
+  let reps: Int32
+  let distance: Float?
+  let distanceUnit: String?
+  let weight: Float?
+  let weightUnit: String?
+
+  static let databaseTableName = "fitness_entries"
+
+  static func defineTable(_ db: Database) throws {
+    try db.create(table: databaseTableName, ifNotExists: true) { t in
+      t.autoIncrementedPrimaryKey("id")
+      t.column("exerciseName", .text).notNull()
+      t.column("exerciseType", .text).notNull()
+      t.column("duration", .integer).notNull()
+      t.column("date", .datetime).notNull()
+      t.column("set_id", .integer).notNull()
+      t.column("reps", .integer).notNull()
+      t.column("distance", .double)
+      t.column("distanceUnit", .text)
+      t.column("weight", .double)
+      t.column("weightUnit", .text)
+    }
+  }
+}
+
+struct FitnessEntry: Identifiable, Codable, FetchableRecord, PersistableRecord {
+  var id: Int64
+  let exerciseName: String
+  let exerciseType: String
+  let duration: Int32  // Duration in milliseconds
+  let date: Date
+  let set_id: Int64
+  let reps: Int32
+  let distance: Float?
+  let distanceUnit: String?
+  let weight: Float?
+  let weightUnit: String?
+
+  // Add the table name to match PartialFitnessEntry
+  static let databaseTableName = "fitness_entries"
+}
+
+// Junction table for many-to-many relationship between exercise types and categories
+struct ExerciseTypeCategory: Codable, FetchableRecord, PersistableRecord {
+  let exercise_type_id: Int64
+  let category_id: Int64
+
+  static let databaseTableName = "exercise_type_categories"
+
+  // Setup table definition
+  static func defineTable(_ db: Database) throws {
+    try db.create(table: databaseTableName, ifNotExists: true) { t in
+      t.column("exercise_type_id", .integer).notNull().references(
+        "exercise_types", onDelete: .cascade)
+      t.column("category_id", .integer).notNull().references("categories", onDelete: .cascade)
+      t.primaryKey(["exercise_type_id", "category_id"])
+    }
+  }
+}
+
+// Junction table for many-to-many relationship between entries and categories
+struct EntryCategory: Codable, FetchableRecord, PersistableRecord {
+  let entry_id: Int64
+  let category_id: Int64
+
+  static let databaseTableName = "entry_categories"
+
+  // Setup table definition
+  static func defineTable(_ db: Database) throws {
+    try db.create(table: databaseTableName, ifNotExists: true) { t in
+      t.column("entry_id", .integer).notNull().references("fitness_entries", onDelete: .cascade)
+      t.column("category_id", .integer).notNull().references("categories", onDelete: .cascade)
+      t.primaryKey(["entry_id", "category_id"])
+    }
+  }
+}
+
 class DatabaseHelper {
   static let shared = DatabaseHelper()
-  private var db: OpaquePointer?
+  private var dbQueue: DatabaseQueue!
 
   private init() {
-    if let dbPath = try? FileManager.default.url(
-      for: .documentDirectory, in: .userDomainMask, appropriateFor: nil, create: false
-    ).appendingPathComponent("fitness.db").path {
-      if sqlite3_open(dbPath, &db) == SQLITE_OK {
-        if sqlite3_exec(
-          db,
-          """
-          CREATE TABLE IF NOT EXISTS fitness_entries (
-              id INTEGER PRIMARY KEY AUTOINCREMENT,
-              exercise_name TEXT,
-              exercise_type TEXT,
-              duration INTEGER,
-              date INTEGER,
-              set_id INTEGER,
-              reps INTEGER,
-              distance REAL,
-              distance_unit TEXT,
-              weight REAL,
-              weight_unit TEXT
-          )
-          """, nil, nil, nil) != SQLITE_OK
-        {
-          print("Error creating fitness_entries table")
-        }
+    setupDatabase()
+  }
 
-        // Create categories table
-        if sqlite3_exec(
-          db,
-          """
-          CREATE TABLE IF NOT EXISTS categories (
-              id INTEGER PRIMARY KEY AUTOINCREMENT,
-              name TEXT UNIQUE
-          )
-          """, nil, nil, nil) != SQLITE_OK
-        {
-          print("Error creating categories table")
-        }
+  private func setupDatabase() {
+    do {
+      // Get database path in documents directory
+      let databaseURL = try FileManager.default.url(
+        for: .documentDirectory,
+        in: .userDomainMask,
+        appropriateFor: nil,
+        create: true
+      ).appendingPathComponent("fitness_grdb.sqlite")
 
-        // Create entry_categories table for many-to-many relationship
-        if sqlite3_exec(
-          db,
-          """
-          CREATE TABLE IF NOT EXISTS entry_categories (
-              entry_id INTEGER,
-              category_id INTEGER,
-              PRIMARY KEY (entry_id, category_id),
-              FOREIGN KEY (entry_id) REFERENCES fitness_entries(id) ON DELETE CASCADE,
-              FOREIGN KEY (category_id) REFERENCES categories(id) ON DELETE CASCADE
-          )
-          """, nil, nil, nil) != SQLITE_OK
-        {
-          print("Error creating entry_categories table")
-        }
+      // Open database connection
+      dbQueue = try DatabaseQueue(path: databaseURL.path)
 
-        // Create exercise_types table
-        if sqlite3_exec(
-          db,
-          """
-          CREATE TABLE IF NOT EXISTS exercise_types (
-              id INTEGER PRIMARY KEY AUTOINCREMENT,
-              name TEXT NOT NULL,
-              type TEXT NOT NULL
-          )
-          """, nil, nil, nil) != SQLITE_OK
-        {
-          print("Error creating exercise_types table")
-        }
+      // Create the database schema
+      try dbQueue.write { db in
+        try PartialCategory.defineTable(db)
+        try PartialExerciseType.defineTable(db)
+        try PartialFitnessEntry.defineTable(db)
+        try ExerciseTypeCategory.defineTable(db)
+        try EntryCategory.defineTable(db)
+      }
 
-        // Create exercise_type_categories table for many-to-many relationship
-        if sqlite3_exec(
-          db,
-          """
-          CREATE TABLE IF NOT EXISTS exercise_type_categories (
-              exercise_type_id INTEGER,
-              category_id INTEGER,
-              PRIMARY KEY (exercise_type_id, category_id),
-              FOREIGN KEY (exercise_type_id) REFERENCES exercise_types(id) ON DELETE CASCADE,
-              FOREIGN KEY (category_id) REFERENCES categories(id) ON DELETE CASCADE
-          )
-          """, nil, nil, nil) != SQLITE_OK
-        {
-          print("Error creating exercise_type_categories table")
-        }
+      // Populate with initial data if needed
+      populateInitialData()
 
-        // Insert categories from exercises.json if none exist
-        let existingCategories = fetchCategories()
-        let existingExerciseTypes = fetchExerciseTypes()
+    } catch {
+      print("Database initialization error: \(error)")
+    }
+  }
 
-        if let exercises = loadExercisesFromJSON() {
+  private func populateInitialData() {
+    do {
+      // Check if categories exist
+      let categoriesExist = try dbQueue.read { db in
+        try Category.fetchCount(db) > 0
+      }
+
+      if !categoriesExist, let exercises = loadExercisesFromJSON() {
+        try dbQueue.write { db in
           for exerciseCategory in exercises.exercises {
             for (categoryName, exerciseTypes) in exerciseCategory {
-              let categoryId =
-                if !existingCategories.contains(where: { $0.name == categoryName }) {
-                  insertCategory(name: categoryName)
-                } else {
-                  existingCategories.first(where: { $0.name == categoryName })?.id
-                }
+              // Insert category
+              let partialCategory = PartialCategory(name: categoryName)
+              var category = try partialCategory.insertAndFetch(db, as: Category.self)
 
-              if let categoryId = categoryId {
-                for (exerciseName, attributes) in exerciseTypes {
-                  if !existingExerciseTypes.contains(where: { $0.name == exerciseName }) {
-                    if let exerciseTypeId = insertExerciseType(name: exerciseName, type: attributes)
-                    {
-                      _ = linkExerciseTypeToCategory(
-                        exerciseTypeId: exerciseTypeId, categoryId: categoryId)
-                    }
-                  }
-                }
+              // Insert exercise types and link to category
+              for (exerciseName, attributes) in exerciseTypes {
+                let partialExerciseType = PartialExerciseType(name: exerciseName, type: attributes)
+                var exerciseType = try partialExerciseType.insertAndFetch(db, as: ExerciseType.self)
+
+                let link = ExerciseTypeCategory(
+                  exercise_type_id: exerciseType.id, category_id: category.id)
+                try link.insert(db)
               }
             }
           }
         }
       }
+    } catch {
+      print("Error populating initial data: \(error)")
     }
-  }
-
-  func generateSetID() -> Int32 {
-    let query = "SELECT MAX(set_id) FROM fitness_entries"
-    var queryStatement: OpaquePointer?
-    var maxSetID: Int32 = 0
-
-    if sqlite3_prepare_v2(db, query, -1, &queryStatement, nil) == SQLITE_OK {
-      if sqlite3_step(queryStatement) == SQLITE_ROW {
-        maxSetID = sqlite3_column_int(queryStatement, 0)
-      }
-    }
-    sqlite3_finalize(queryStatement)
-
-    return maxSetID + 1
   }
 
   private func loadExercisesFromJSON() -> ExercisesData? {
@@ -207,500 +252,392 @@ class DatabaseHelper {
     }
   }
 
-  func insertEntry(
-    exerciseName: String, exerciseType: String, duration: Int32, date: Date, set_id: Int32,
-    reps: Int32, distance: Float? = nil, distanceUnit: String? = nil, weight: Float? = nil,
-    weightUnit: String? = nil
-  ) -> Int32? {
-    let insertStatementString =
-      "INSERT INTO fitness_entries (exercise_name, exercise_type, duration, date, set_id, reps, distance, distance_unit, weight, weight_unit) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
-    var insertStatement: OpaquePointer?
+  // MARK: - Set ID Generation
 
-    if sqlite3_prepare_v2(db, insertStatementString, -1, &insertStatement, nil) == SQLITE_OK {
-      let timestamp = Int32(date.timeIntervalSince1970)
-
-      sqlite3_bind_text(insertStatement, 1, (exerciseName as NSString).utf8String, -1, nil)
-      sqlite3_bind_text(insertStatement, 2, (exerciseType as NSString).utf8String, -1, nil)
-      sqlite3_bind_int(insertStatement, 3, duration)
-      sqlite3_bind_int(insertStatement, 4, timestamp)
-      sqlite3_bind_int(insertStatement, 5, set_id)
-      sqlite3_bind_int(insertStatement, 6, reps)
-
-      if let distance = distance {
-        sqlite3_bind_double(insertStatement, 7, Double(distance))
-      } else {
-        sqlite3_bind_null(insertStatement, 7)
+  func generateSetID() -> Int64 {
+    do {
+      let maxSetID = try dbQueue.read { db in
+        let request = "SELECT MAX(set_id) FROM fitness_entries"
+        return try Int64.fetchOne(db, sql: request) ?? 0
       }
-
-      if let distanceUnit = distanceUnit {
-        sqlite3_bind_text(insertStatement, 8, (distanceUnit as NSString).utf8String, -1, nil)
-      } else {
-        sqlite3_bind_null(insertStatement, 8)
-      }
-
-      if let weight = weight {
-        sqlite3_bind_double(insertStatement, 9, Double(weight))
-      } else {
-        sqlite3_bind_null(insertStatement, 9)
-      }
-
-      if let weightUnit = weightUnit {
-        sqlite3_bind_text(insertStatement, 10, (weightUnit as NSString).utf8String, -1, nil)
-      } else {
-        sqlite3_bind_null(insertStatement, 10)
-      }
-
-      if sqlite3_step(insertStatement) == SQLITE_DONE {
-        let entryId = sqlite3_last_insert_rowid(db)
-        sqlite3_finalize(insertStatement)
-        return Int32(entryId)
-      }
+      return maxSetID + 1
+    } catch {
+      print("Error generating set ID: \(error)")
+      return 1
     }
-    sqlite3_finalize(insertStatement)
-    return nil
+  }
+
+  // MARK: - Fitness Entry Methods
+
+  func insertEntry(
+    exerciseName: String,
+    exerciseType: String,
+    duration: Int32,
+    date: Date,
+    set_id: Int64,
+    reps: Int32,
+    distance: Float? = nil,
+    distanceUnit: String? = nil,
+    weight: Float? = nil,
+    weightUnit: String? = nil
+  ) -> Int64? {
+    do {
+      let partialEntry = PartialFitnessEntry(
+        exerciseName: exerciseName,
+        exerciseType: exerciseType,
+        duration: duration,
+        date: date,
+        set_id: set_id,
+        reps: reps,
+        distance: distance,
+        distanceUnit: distanceUnit,
+        weight: weight,
+        weightUnit: weightUnit
+      )
+
+      var entry = try dbQueue.write { db in
+        try partialEntry.insertAndFetch(db, as: FitnessEntry.self)
+      }
+
+      return entry.id
+    } catch {
+      print("Error inserting entry: \(error)")
+      return nil
+    }
   }
 
   func fetchEntries(for date: Date) -> [FitnessEntry] {
-    var entries: [FitnessEntry] = []
-    let calendar = Calendar.current
-    let startOfDay = calendar.startOfDay(for: date)
-    let endOfDay = calendar.date(byAdding: .day, value: 1, to: startOfDay)!
+    do {
+      let calendar = Calendar.current
+      let startOfDay = calendar.startOfDay(for: date)
+      let endOfDay = calendar.date(byAdding: .day, value: 1, to: startOfDay)!
 
-    let startTimestamp = Int32(startOfDay.timeIntervalSince1970)
-    let endTimestamp = Int32(endOfDay.timeIntervalSince1970)
+      return try dbQueue.read { db in
+        let request =
+          FitnessEntry
+          .filter(Column("date") >= startOfDay)
+          .filter(Column("date") < endOfDay)
+          .order(Column("date").desc)
 
-    let queryStatementString =
-      "SELECT * FROM fitness_entries WHERE date >= ? AND date < ? ORDER BY date DESC"
-    var queryStatement: OpaquePointer?
-
-    if sqlite3_prepare_v2(db, queryStatementString, -1, &queryStatement, nil) == SQLITE_OK {
-      sqlite3_bind_int(queryStatement, 1, startTimestamp)
-      sqlite3_bind_int(queryStatement, 2, endTimestamp)
-
-      while sqlite3_step(queryStatement) == SQLITE_ROW {
-        let id = sqlite3_column_int(queryStatement, 0)
-        let exerciseName = String(cString: sqlite3_column_text(queryStatement, 1))
-        let exerciseType = String(cString: sqlite3_column_text(queryStatement, 2))
-        let duration = sqlite3_column_int(queryStatement, 3)
-        let timestamp = sqlite3_column_int(queryStatement, 4)
-        let set_id = sqlite3_column_int(queryStatement, 5)
-        let reps = sqlite3_column_int(queryStatement, 6)
-        let date = Date(timeIntervalSince1970: TimeInterval(timestamp))
-
-        var distance: Float?
-        var distanceUnit: String?
-        var weight: Float?
-        var weightUnit: String?
-
-        if sqlite3_column_type(queryStatement, 7) != SQLITE_NULL {
-          distance = Float(sqlite3_column_double(queryStatement, 7))
-        }
-        if sqlite3_column_type(queryStatement, 8) != SQLITE_NULL {
-          distanceUnit = String(cString: sqlite3_column_text(queryStatement, 8))
-        }
-        if sqlite3_column_type(queryStatement, 9) != SQLITE_NULL {
-          weight = Float(sqlite3_column_double(queryStatement, 9))
-        }
-        if sqlite3_column_type(queryStatement, 10) != SQLITE_NULL {
-          weightUnit = String(cString: sqlite3_column_text(queryStatement, 10))
-        }
-
-        entries.append(
-          FitnessEntry(
-            id: id, exerciseName: exerciseName, exerciseType: exerciseType, duration: duration,
-            date: date, set_id: set_id, reps: reps, distance: distance, distanceUnit: distanceUnit,
-            weight: weight, weightUnit: weightUnit))
+        return try request.fetchAll(db)
       }
+    } catch {
+      print("Error fetching entries: \(error)")
+      return []
     }
-    sqlite3_finalize(queryStatement)
-    return entries
   }
 
-  // Add category methods
-  func insertCategory(name: String) -> Int32? {
-    let insertStatementString = "INSERT INTO categories (name) VALUES (?)"
-    var insertStatement: OpaquePointer?
+  func fetchEntriesBySetId(setId: Int64) -> [FitnessEntry] {
+    do {
+      return try dbQueue.read { db in
+        let request =
+          FitnessEntry
+          .filter(Column("set_id") == setId)
 
-    if sqlite3_prepare_v2(db, insertStatementString, -1, &insertStatement, nil) == SQLITE_OK {
-      sqlite3_bind_text(insertStatement, 1, (name as NSString).utf8String, -1, nil)
-
-      if sqlite3_step(insertStatement) == SQLITE_DONE {
-        let categoryId = sqlite3_last_insert_rowid(db)
-        sqlite3_finalize(insertStatement)
-        return Int32(categoryId)
+        return try request.fetchAll(db)
       }
+    } catch {
+      print("Error fetching entries by set ID: \(error)")
+      return []
     }
-    sqlite3_finalize(insertStatement)
-    return nil
+  }
+
+  func deleteEntriesBySetId(setId: Int64) {
+    do {
+      try dbQueue.write { db in
+        _ =
+          try FitnessEntry
+          .filter(Column("set_id") == setId)
+          .deleteAll(db)
+      }
+    } catch {
+      print("Error deleting entries by set ID: \(error)")
+    }
+  }
+
+  // MARK: - Category Methods
+
+  func insertCategory(name: String) -> Int64? {
+    do {
+      let partialCategory = PartialCategory(name: name)
+
+      var category = try dbQueue.write { db in
+        try partialCategory.insertAndFetch(db, as: Category.self)
+      }
+
+      return category.id
+    } catch {
+      print("Error inserting category: \(error)")
+      return nil
+    }
   }
 
   func fetchCategories() -> [Category] {
-    var categories: [Category] = []
-    let queryStatementString = "SELECT * FROM categories ORDER BY name"
-    var queryStatement: OpaquePointer?
-
-    if sqlite3_prepare_v2(db, queryStatementString, -1, &queryStatement, nil) == SQLITE_OK {
-      while sqlite3_step(queryStatement) == SQLITE_ROW {
-        let id = sqlite3_column_int(queryStatement, 0)
-        let name = String(cString: sqlite3_column_text(queryStatement, 1))
-        categories.append(Category(id: id, name: name))
+    do {
+      return try dbQueue.read { db in
+        try Category
+          .order(Column("name"))
+          .fetchAll(db)
       }
+    } catch {
+      print("Error fetching categories: \(error)")
+      return []
     }
-    sqlite3_finalize(queryStatement)
-    return categories
   }
 
-  func linkEntryToCategory(entryId: Int32, categoryId: Int32) -> Bool {
-    let insertStatementString = "INSERT INTO entry_categories (entry_id, category_id) VALUES (?, ?)"
-    var insertStatement: OpaquePointer?
-
-    if sqlite3_prepare_v2(db, insertStatementString, -1, &insertStatement, nil) == SQLITE_OK {
-      sqlite3_bind_int(insertStatement, 1, entryId)
-      sqlite3_bind_int(insertStatement, 2, categoryId)
-
-      if sqlite3_step(insertStatement) == SQLITE_DONE {
-        sqlite3_finalize(insertStatement)
-        return true
+  func updateCategory(id: Int64, name: String) -> Bool {
+    do {
+      try dbQueue.write { db in
+        if let category = try Category.fetchOne(db, key: id) {
+          var updatedCategory = category
+          updatedCategory.name = name
+          try updatedCategory.update(db)
+          return true
+        }
+        return false
       }
+    } catch {
+      print("Error updating category: \(error)")
+      return false
     }
-    sqlite3_finalize(insertStatement)
     return false
   }
 
-  func getCategoriesForEntry(entryId: Int32) -> [Category] {
-    var categories: [Category] = []
-    let queryStatementString = """
+  func deleteCategory(id: Int64) -> Bool {
+    do {
+      try dbQueue.write { db in
+        return try Category.deleteOne(db, key: id)
+      }
+    } catch {
+      print("Error deleting category: \(error)")
+      return false
+    }
+    return false
+  }
+
+  func linkEntryToCategory(entryId: Int64, categoryId: Int64) -> Bool {
+    do {
+      let link = EntryCategory(entry_id: entryId, category_id: categoryId)
+
+      try dbQueue.write { db in
+        try link.insert(db)
+      }
+      return true
+    } catch {
+      print("Error linking entry to category: \(error)")
+      return false
+    }
+  }
+
+  func getCategoriesForEntry(entryId: Int64) -> [Category] {
+    do {
+      return try dbQueue.read { db in
+        let request = """
           SELECT c.id, c.name FROM categories c
           INNER JOIN entry_categories ec ON c.id = ec.category_id
           WHERE ec.entry_id = ?
           ORDER BY c.name
-      """
-    var queryStatement: OpaquePointer?
+          """
 
-    if sqlite3_prepare_v2(db, queryStatementString, -1, &queryStatement, nil) == SQLITE_OK {
-      sqlite3_bind_int(queryStatement, 1, entryId)
-
-      while sqlite3_step(queryStatement) == SQLITE_ROW {
-        let id = sqlite3_column_int(queryStatement, 0)
-        let name = String(cString: sqlite3_column_text(queryStatement, 1))
-        categories.append(Category(id: id, name: name))
+        return try Category.fetchAll(db, sql: request, arguments: [entryId])
       }
+    } catch {
+      print("Error fetching categories for entry: \(error)")
+      return []
     }
-    sqlite3_finalize(queryStatement)
-    return categories
   }
 
-  // Add exercise type methods
-  func insertExerciseType(name: String, type: String) -> Int32? {
-    let insertStatementString = "INSERT INTO exercise_types (name, type) VALUES (?, ?)"
-    var insertStatement: OpaquePointer?
+  // MARK: - Exercise Type Methods
 
-    if sqlite3_prepare_v2(db, insertStatementString, -1, &insertStatement, nil) == SQLITE_OK {
-      sqlite3_bind_text(insertStatement, 1, (name as NSString).utf8String, -1, nil)
-      sqlite3_bind_text(insertStatement, 2, (type as NSString).utf8String, -1, nil)
+  func insertExerciseType(name: String, type: String) -> Int64? {
+    do {
+      let partialExerciseType = PartialExerciseType(name: name, type: type)
 
-      if sqlite3_step(insertStatement) == SQLITE_DONE {
-        let typeId = sqlite3_last_insert_rowid(db)
-        sqlite3_finalize(insertStatement)
-        return Int32(typeId)
+      var exerciseType = try dbQueue.write { db in
+        try partialExerciseType.insertAndFetch(db, as: ExerciseType.self)
       }
+
+      return exerciseType.id
+    } catch {
+      print("Error inserting exercise type: \(error)")
+      return nil
     }
-    sqlite3_finalize(insertStatement)
-    return nil
   }
 
   func fetchExerciseTypes() -> [ExerciseType] {
-    var types: [ExerciseType] = []
-    let queryStatementString = "SELECT * FROM exercise_types ORDER BY name"
-    var queryStatement: OpaquePointer?
-
-    if sqlite3_prepare_v2(db, queryStatementString, -1, &queryStatement, nil) == SQLITE_OK {
-      while sqlite3_step(queryStatement) == SQLITE_ROW {
-        let id = sqlite3_column_int(queryStatement, 0)
-        let name = String(cString: sqlite3_column_text(queryStatement, 1))
-        let type = String(cString: sqlite3_column_text(queryStatement, 2))
-        types.append(ExerciseType(id: id, name: name, type: type))
+    do {
+      return try dbQueue.read { db in
+        try ExerciseType
+          .order(Column("name"))
+          .fetchAll(db)
       }
+    } catch {
+      print("Error fetching exercise types: \(error)")
+      return []
     }
-    sqlite3_finalize(queryStatement)
-    return types
   }
 
-  func linkExerciseTypeToCategory(exerciseTypeId: Int32, categoryId: Int32) -> Bool {
-    let insertStatementString =
-      "INSERT INTO exercise_type_categories (exercise_type_id, category_id) VALUES (?, ?)"
-    var insertStatement: OpaquePointer?
+  func fetchAllExerciseTypes() -> [ExerciseType] {
+    return fetchExerciseTypes()  // Same implementation in this case
+  }
 
-    if sqlite3_prepare_v2(db, insertStatementString, -1, &insertStatement, nil) == SQLITE_OK {
-      sqlite3_bind_int(insertStatement, 1, exerciseTypeId)
-      sqlite3_bind_int(insertStatement, 2, categoryId)
-
-      if sqlite3_step(insertStatement) == SQLITE_DONE {
-        sqlite3_finalize(insertStatement)
-        return true
+  func updateExerciseType(id: Int64, name: String, type: String) -> Bool {
+    do {
+      try dbQueue.write { db in
+        if let exerciseType = try ExerciseType.fetchOne(db, key: id) {
+          var updatedExerciseType = exerciseType
+          updatedExerciseType.name = name
+          updatedExerciseType.type = type
+          try updatedExerciseType.update(db)
+          return true
+        }
+        return false
       }
+    } catch {
+      print("Error updating exercise type: \(error)")
+      return false
     }
-    sqlite3_finalize(insertStatement)
     return false
   }
 
-  func getCategoriesForExerciseType(exerciseTypeId: Int32) -> [Category] {
-    var categories: [Category] = []
-    let queryStatementString = """
+  func deleteExerciseType(id: Int64) -> Bool {
+    do {
+      try dbQueue.write { db in
+        return try ExerciseType.deleteOne(db, key: id)
+      }
+    } catch {
+      print("Error deleting exercise type: \(error)")
+      return false
+    }
+    return false
+  }
+
+  func linkExerciseTypeToCategory(exerciseTypeId: Int64, categoryId: Int64) -> Bool {
+    do {
+      let link = ExerciseTypeCategory(
+        exercise_type_id: exerciseTypeId,
+        category_id: categoryId
+      )
+
+      try dbQueue.write { db in
+        try link.insert(db)
+      }
+      return true
+    } catch {
+      print("Error linking exercise type to category: \(error)")
+      return false
+    }
+  }
+
+  func updateExerciseTypeCategory(exerciseTypeId: Int64, categoryId: Int64) -> Bool {
+    do {
+      try dbQueue.write { db in
+        // Delete existing links
+        _ =
+          try ExerciseTypeCategory
+          .filter(Column("exercise_type_id") == exerciseTypeId)
+          .deleteAll(db)
+
+        // Add new link
+        let link = ExerciseTypeCategory(
+          exercise_type_id: exerciseTypeId,
+          category_id: categoryId
+        )
+        try link.insert(db)
+        return true
+      }
+    } catch {
+      print("Error updating exercise type category: \(error)")
+      return false
+    }
+    return false
+  }
+
+  func getCategoriesForExerciseType(exerciseTypeId: Int64) -> [Category] {
+    do {
+      return try dbQueue.read { db in
+        let request = """
           SELECT c.id, c.name
           FROM categories c
           INNER JOIN exercise_type_categories etc ON c.id = etc.category_id
           WHERE etc.exercise_type_id = ?
           ORDER BY c.name
-      """
-    var queryStatement: OpaquePointer?
+          """
 
-    if sqlite3_prepare_v2(db, queryStatementString, -1, &queryStatement, nil) == SQLITE_OK {
-      sqlite3_bind_int(queryStatement, 1, exerciseTypeId)
-
-      while sqlite3_step(queryStatement) == SQLITE_ROW {
-        let id = sqlite3_column_int(queryStatement, 0)
-        let name = String(cString: sqlite3_column_text(queryStatement, 1))
-        categories.append(Category(id: id, name: name))
+        return try Category.fetchAll(db, sql: request, arguments: [exerciseTypeId])
       }
+    } catch {
+      print("Error fetching categories for exercise type: \(error)")
+      return []
     }
-    sqlite3_finalize(queryStatement)
-    return categories
   }
 
-  func getExerciseTypesForCategory(categoryId: Int32) -> [ExerciseType] {
-    var exerciseTypes: [ExerciseType] = []
-
-    let query = """
-          SELECT et.* FROM exercise_types et
-          JOIN exercise_type_categories etc ON et.id = etc.exercise_type_id
+  func getExerciseTypesForCategory(categoryId: Int64) -> [ExerciseType] {
+    do {
+      return try dbQueue.read { db in
+        let request = """
+          SELECT et.id, et.name, et.type
+          FROM exercise_types et
+          INNER JOIN exercise_type_categories etc ON et.id = etc.exercise_type_id
           WHERE etc.category_id = ?
           ORDER BY et.name
-      """
+          """
 
-    var queryStatement: OpaquePointer?
-
-    if sqlite3_prepare_v2(db, query, -1, &queryStatement, nil) == SQLITE_OK {
-      sqlite3_bind_int(queryStatement, 1, categoryId)
-
-      while sqlite3_step(queryStatement) == SQLITE_ROW {
-        let id = sqlite3_column_int(queryStatement, 0)
-        let name = String(cString: sqlite3_column_text(queryStatement, 1))
-        let type = String(cString: sqlite3_column_text(queryStatement, 2))
-        exerciseTypes.append(ExerciseType(id: id, name: name, type: type))
+        return try ExerciseType.fetchAll(db, sql: request, arguments: [categoryId])
       }
+    } catch {
+      print("Error fetching exercise types for category: \(error)")
+      return []
     }
-    sqlite3_finalize(queryStatement)
-    return exerciseTypes
   }
 
-  func updateExerciseType(id: Int32, name: String, type: String) -> Bool {
-    let updateStatementString = "UPDATE exercise_types SET name = ?, type = ? WHERE id = ?"
-    var updateStatement: OpaquePointer?
-
-    if sqlite3_prepare_v2(db, updateStatementString, -1, &updateStatement, nil) == SQLITE_OK {
-      sqlite3_bind_text(updateStatement, 1, (name as NSString).utf8String, -1, nil)
-      sqlite3_bind_text(updateStatement, 2, (type as NSString).utf8String, -1, nil)
-      sqlite3_bind_int(updateStatement, 3, id)
-
-      if sqlite3_step(updateStatement) == SQLITE_DONE {
-        sqlite3_finalize(updateStatement)
-        return true
-      }
-    }
-    sqlite3_finalize(updateStatement)
-    return false
-  }
-
-  func updateExerciseTypeCategory(exerciseTypeId: Int32, categoryId: Int32) -> Bool {
-    // First delete existing category link
-    let deleteStatementString = "DELETE FROM exercise_type_categories WHERE exercise_type_id = ?"
-    var deleteStatement: OpaquePointer?
-
-    if sqlite3_prepare_v2(db, deleteStatementString, -1, &deleteStatement, nil) == SQLITE_OK {
-      sqlite3_bind_int(deleteStatement, 1, exerciseTypeId)
-
-      if sqlite3_step(deleteStatement) == SQLITE_DONE {
-        sqlite3_finalize(deleteStatement)
-        // Then add new category link
-        return linkExerciseTypeToCategory(exerciseTypeId: exerciseTypeId, categoryId: categoryId)
-      }
-    }
-    sqlite3_finalize(deleteStatement)
-    return false
-  }
-
-  func deleteEntriesBySetId(setId: Int32) {
-    let deleteStatementString = "DELETE FROM fitness_entries WHERE set_id = ?"
-    var deleteStatement: OpaquePointer?
-
-    if sqlite3_prepare_v2(db, deleteStatementString, -1, &deleteStatement, nil) == SQLITE_OK {
-      sqlite3_bind_int(deleteStatement, 1, setId)
-
-      if sqlite3_step(deleteStatement) != SQLITE_DONE {
-        print("Error deleting entries for set_id: \(setId)")
-      }
-    }
-    sqlite3_finalize(deleteStatement)
-  }
+  // MARK: - Export Functionality
 
   func exportToCSV() -> String {
     var csvString =
       "ID,Exercise Name,Exercise Type,Duration,Date,set_id,Reps,Distance,Distance Unit,Weight,Weight Unit\n"
-    let query = "SELECT * FROM fitness_entries ORDER BY date DESC"
-    var queryStatement: OpaquePointer?
 
-    if sqlite3_prepare_v2(db, query, -1, &queryStatement, nil) == SQLITE_OK {
-      while sqlite3_step(queryStatement) == SQLITE_ROW {
-        let id = sqlite3_column_int(queryStatement, 0)
-        let exerciseName = String(cString: sqlite3_column_text(queryStatement, 1))
-        let exerciseType = String(cString: sqlite3_column_text(queryStatement, 2))
-        let duration = sqlite3_column_int(queryStatement, 3)
-        let timestamp = sqlite3_column_int(queryStatement, 4)
-        let set_id = sqlite3_column_int(queryStatement, 5)
-        let reps = sqlite3_column_int(queryStatement, 6)
+    do {
+      let entries = try dbQueue.read { db in
+        try FitnessEntry
+          .order(Column("date").desc)
+          .fetchAll(db)
+      }
 
-        let date = Date(timeIntervalSince1970: TimeInterval(timestamp))
-        let dateFormatter = DateFormatter()
-        dateFormatter.dateFormat = "yyyy-MM-dd HH:mm:ss"
-        let dateString = dateFormatter.string(from: date)
+      let dateFormatter = DateFormatter()
+      dateFormatter.dateFormat = "yyyy-MM-dd HH:mm:ss"
 
-        var distance = "N/A"
-        var distanceUnit = "N/A"
-        var weight = "N/A"
-        var weightUnit = "N/A"
-
-        if sqlite3_column_type(queryStatement, 7) != SQLITE_NULL {
-          distance = String(Float(sqlite3_column_double(queryStatement, 7)))
-        }
-        if sqlite3_column_type(queryStatement, 8) != SQLITE_NULL {
-          distanceUnit = String(cString: sqlite3_column_text(queryStatement, 8))
-        }
-        if sqlite3_column_type(queryStatement, 9) != SQLITE_NULL {
-          weight = String(Float(sqlite3_column_double(queryStatement, 9)))
-        }
-        if sqlite3_column_type(queryStatement, 10) != SQLITE_NULL {
-          weightUnit = String(cString: sqlite3_column_text(queryStatement, 10))
-        }
+      for entry in entries {
+        let dateString = dateFormatter.string(from: entry.date)
+        let distance = entry.distance != nil ? String(entry.distance!) : "N/A"
+        let distanceUnit = entry.distanceUnit ?? "N/A"
+        let weight = entry.weight != nil ? String(entry.weight!) : "N/A"
+        let weightUnit = entry.weightUnit ?? "N/A"
 
         let row =
-          "\(id),\"\(exerciseName)\",\"\(exerciseType)\",\(duration),\"\(dateString)\",\(set_id),\(reps),\(distance),\(distanceUnit),\(weight),\(weightUnit)\n"
+          "\(entry.id),\"\(entry.exerciseName)\",\"\(entry.exerciseType)\",\(entry.duration),\"\(dateString)\",\(entry.set_id),\(entry.reps),\(distance),\(distanceUnit),\(weight),\(weightUnit)\n"
         csvString.append(row)
       }
+    } catch {
+      print("Error exporting to CSV: \(error)")
     }
-    sqlite3_finalize(queryStatement)
+
     return csvString
   }
-
-  func fetchAllExerciseTypes() -> [ExerciseType] {
-    var exerciseTypes: [ExerciseType] = []
-    let queryStatementString = "SELECT * FROM exercise_types ORDER BY name"
-    var queryStatement: OpaquePointer?
-
-    if sqlite3_prepare_v2(db, queryStatementString, -1, &queryStatement, nil) == SQLITE_OK {
-      while sqlite3_step(queryStatement) == SQLITE_ROW {
-        let id = sqlite3_column_int(queryStatement, 0)
-        let name = String(cString: sqlite3_column_text(queryStatement, 1))
-        let type = String(cString: sqlite3_column_text(queryStatement, 2))
-        exerciseTypes.append(ExerciseType(id: id, name: name, type: type))
-      }
-    }
-    sqlite3_finalize(queryStatement)
-    return exerciseTypes
-  }
-
-  func fetchEntriesBySetId(setId: Int32) -> [FitnessEntry] {
-    var entries: [FitnessEntry] = []
-    let queryStatementString = "SELECT * FROM fitness_entries WHERE set_id = ?"
-    var queryStatement: OpaquePointer?
-
-    if sqlite3_prepare_v2(db, queryStatementString, -1, &queryStatement, nil) == SQLITE_OK {
-      sqlite3_bind_int(queryStatement, 1, setId)
-
-      while sqlite3_step(queryStatement) == SQLITE_ROW {
-        let id = sqlite3_column_int(queryStatement, 0)
-        let exerciseName = String(cString: sqlite3_column_text(queryStatement, 1))
-        let exerciseType = String(cString: sqlite3_column_text(queryStatement, 2))
-        let duration = sqlite3_column_int(queryStatement, 3)
-        let timestamp = sqlite3_column_int(queryStatement, 4)
-        let set_id = sqlite3_column_int(queryStatement, 5)
-        let reps = sqlite3_column_int(queryStatement, 6)
-        let date = Date(timeIntervalSince1970: TimeInterval(timestamp))
-
-        var distance: Float?
-        var distanceUnit: String?
-        var weight: Float?
-        var weightUnit: String?
-
-        if sqlite3_column_type(queryStatement, 7) != SQLITE_NULL {
-          distance = Float(sqlite3_column_double(queryStatement, 7))
-        }
-        if sqlite3_column_type(queryStatement, 8) != SQLITE_NULL {
-          distanceUnit = String(cString: sqlite3_column_text(queryStatement, 8))
-        }
-        if sqlite3_column_type(queryStatement, 9) != SQLITE_NULL {
-          weight = Float(sqlite3_column_double(queryStatement, 9))
-        }
-        if sqlite3_column_type(queryStatement, 10) != SQLITE_NULL {
-          weightUnit = String(cString: sqlite3_column_text(queryStatement, 10))
-        }
-
-        entries.append(
-          FitnessEntry(
-            id: id, exerciseName: exerciseName, exerciseType: exerciseType, duration: duration,
-            date: date, set_id: set_id, reps: reps, distance: distance, distanceUnit: distanceUnit,
-            weight: weight, weightUnit: weightUnit))
-      }
-    }
-    sqlite3_finalize(queryStatement)
-    return entries
-  }
-  func deleteExerciseType(id: Int32) -> Bool {
-    let deleteStatementString = "DELETE FROM exercise_types WHERE id = ?"
-    var deleteStatement: OpaquePointer?
-
-    if sqlite3_prepare_v2(db, deleteStatementString, -1, &deleteStatement, nil) == SQLITE_OK {
-      sqlite3_bind_int(deleteStatement, 1, id)
-
-      if sqlite3_step(deleteStatement) == SQLITE_DONE {
-        sqlite3_finalize(deleteStatement)
-        return true
-      }
-    }
-    sqlite3_finalize(deleteStatement)
-    return false
-  }
-
-  func deleteCategory(id: Int32) -> Bool {
-    let deleteStatementString = "DELETE FROM categories WHERE id = ?"
-    var deleteStatement: OpaquePointer?
-
-    if sqlite3_prepare_v2(db, deleteStatementString, -1, &deleteStatement, nil) == SQLITE_OK {
-      sqlite3_bind_int(deleteStatement, 1, id)
-
-      if sqlite3_step(deleteStatement) == SQLITE_DONE {
-        sqlite3_finalize(deleteStatement)
-        return true
-      }
-    }
-    sqlite3_finalize(deleteStatement)
-    return false
-  }
-
-  func updateCategory(id: Int32, name: String) -> Bool {
-    let updateStatementString = "UPDATE categories SET name = ? WHERE id = ?"
-    var updateStatement: OpaquePointer?
-
-    if sqlite3_prepare_v2(db, updateStatementString, -1, &updateStatement, nil) == SQLITE_OK {
-      sqlite3_bind_text(updateStatement, 1, (name as NSString).utf8String, -1, nil)
-      sqlite3_bind_int(updateStatement, 2, id)
-
-      if sqlite3_step(updateStatement) == SQLITE_DONE {
-        sqlite3_finalize(updateStatement)
-        return true
-      }
-    }
-    sqlite3_finalize(updateStatement)
-    return false
-  }
 }
+
+// MARK: - Extensions for updatable records
+// extension Category {
+//     init(id: Int64?, name: String) {
+//         self.id = id
+//         self.name = name
+//     }
+// }
+
+// extension ExerciseType {
+//     init(id: Int64?, name: String, type: String) {
+//         self.id = id
+//         self.name = name
+//         self.type = type
+//     }
+// }
