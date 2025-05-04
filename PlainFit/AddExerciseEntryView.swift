@@ -7,7 +7,7 @@ struct AddExerciseEntryView: View {
   @Binding var showEditExerciseSet: Bool
 
   let exerciseType: ExerciseType
-  @State private var nextID: Int32 = 0
+  @State private var nextID: Int64 = 0
   @State private var exerciseDate: Date
   @State private var hours: String = ""
   @State private var minutes: String = ""
@@ -24,15 +24,15 @@ struct AddExerciseEntryView: View {
 
   @State private var exercises: [FitnessEntry] = []
   @State private var isEditing: Bool = false
-  @State private var editingExerciseID: Int32 = 0
-  @State private var setID: Int32
+  @State private var editingExerciseID: Int64 = 0
+  @State private var setID: Int64
   @State private var showErrorModal: Bool = false
   @State private var errorMessage: String = ""
   @State private var showingDeleteConfirmation: Bool = false
 
   init(
     exerciseType: ExerciseType? = nil, selectedDate: Date, showCategoryPicker: Binding<Bool>,
-    showEditExerciseSet: Binding<Bool>, setID: Int32? = nil
+    showEditExerciseSet: Binding<Bool>, setID: Int64? = nil
   ) {
     if let setID = setID {
       _setID = State(initialValue: setID)
