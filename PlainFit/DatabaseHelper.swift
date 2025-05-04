@@ -24,7 +24,6 @@ struct PartialCategory: Encodable, PersistableRecord {
   }
 }
 
-// MARK: - Record Models
 struct Category: Identifiable, Hashable, Codable, PersistableRecord, FetchableRecord {
   var id: Int64
   var name: String
@@ -181,7 +180,7 @@ class DatabaseHelper {
         in: .userDomainMask,
         appropriateFor: nil,
         create: true
-      ).appendingPathComponent("fitness_grdb.sqlite")
+      ).appendingPathComponent("plainfit.sqlite")
 
       // Open database connection
       dbQueue = try DatabaseQueue(path: databaseURL.path)
@@ -252,8 +251,6 @@ class DatabaseHelper {
     }
   }
 
-  // MARK: - Set ID Generation
-
   func generateSetID() -> Int64 {
     do {
       let maxSetID = try dbQueue.read { db in
@@ -266,8 +263,6 @@ class DatabaseHelper {
       return 1
     }
   }
-
-  // MARK: - Fitness Entry Methods
 
   func insertEntry(
     exerciseName: String,
@@ -354,8 +349,6 @@ class DatabaseHelper {
       print("Error deleting entries by set ID: \(error)")
     }
   }
-
-  // MARK: - Category Methods
 
   func insertCategory(name: String) -> Int64? {
     do {
@@ -446,8 +439,6 @@ class DatabaseHelper {
       return []
     }
   }
-
-  // MARK: - Exercise Type Methods
 
   func insertExerciseType(name: String, type: String) -> Int64? {
     do {
@@ -591,8 +582,6 @@ class DatabaseHelper {
     }
   }
 
-  // MARK: - Export Functionality
-
   func exportToCSV() -> String {
     var csvString =
       "ID,Exercise Name,Exercise Type,Duration,Date,set_id,Reps,Distance,Distance Unit,Weight,Weight Unit\n"
@@ -625,19 +614,3 @@ class DatabaseHelper {
     return csvString
   }
 }
-
-// MARK: - Extensions for updatable records
-// extension Category {
-//     init(id: Int64?, name: String) {
-//         self.id = id
-//         self.name = name
-//     }
-// }
-
-// extension ExerciseType {
-//     init(id: Int64?, name: String, type: String) {
-//         self.id = id
-//         self.name = name
-//         self.type = type
-//     }
-// }
