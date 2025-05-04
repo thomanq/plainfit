@@ -1,10 +1,3 @@
-//
-//  PlainFitUITestsLaunchTests.swift
-//  PlainFitUITests
-//
-//  Created by Thomas on 27/04/2025.
-//
-
 import XCTest
 
 final class PlainFitUITestsLaunchTests: XCTestCase {
