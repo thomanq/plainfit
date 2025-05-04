@@ -20,11 +20,13 @@ struct HomeView: View {
   @State private var newCategoryName = ""
   @State private var showCategoryPicker: Bool = false
   @State private var showEditExerciseSet: Bool = false
-  @State private var editExerciseSetID: Int64 = 0
+  @State private var editExerciseSetId: Int64 = 0
   @State private var showingCalendar = false
   @State private var showingSettings = false
   @State private var showingDeleteConfirmation = false
+  @State private var showingImportCsvConfirmation = false
   @State private var setToDelete: Int64? = nil
+  @State private var showingImportPicker = false
 
   func exportToCSVFile() -> URL? {
     let dateFormatter = DateFormatter()
@@ -106,7 +108,7 @@ struct HomeView: View {
           }
           .padding(.horizontal)
 
-          let groupedEntries = Dictionary(grouping: fitnessEntries, by: { $0.set_id })
+          let groupedEntries = Dictionary(grouping: fitnessEntries, by: { $0.setId })
           List {
             ForEach(groupedEntries.keys.sorted(), id: \.self) { setId in
               VStack(alignment: .leading) {
@@ -209,7 +211,7 @@ struct HomeView: View {
               .swipeActions(edge: .leading, allowsFullSwipe: true) {
 
                 Button(action: {
-                  editExerciseSetID = setId
+                  editExerciseSetId = setId
                   showEditExerciseSet = true
                 }) {
                   Label("Edit", systemImage: "pencil")
@@ -227,7 +229,7 @@ struct HomeView: View {
             selectedDate: currentDate,
             showCategoryPicker: $showCategoryPicker,
             showEditExerciseSet: $showEditExerciseSet,
-            setID: editExerciseSetID),
+            setId: editExerciseSetId),
           isActive: $showEditExerciseSet
         ) {
           EmptyView()
@@ -262,19 +264,20 @@ struct HomeView: View {
             Button(action: { showingSettings = true }) {
               Label("Settings", systemImage: "gear")
             }
-            Menu("Import / Export", systemImage: "arrow.left.arrow.right") {
-              Button(action: { /* Add Import from CSV action */ }) {
-                Label("Import CSV", systemImage: "square.and.arrow.down")
-              }
-              Button(action: exportEntries) {
-                Label("Export to CSV", systemImage: "square.and.arrow.up")
-              }
-              Button(action: { /* Add Import Categories and Exercises action */ }) {
-                Label("Restore DB", systemImage: "tray.and.arrow.down")
-              }
-              Button(action: { /* Add Export Categories and Exercises action */ }) {
-                Label("Back up DB", systemImage: "tray.and.arrow.up")
-              }
+            Button(action: {
+              showingImportCsvConfirmation = true
+            }) {
+              Label("Import CSV", systemImage: "square.and.arrow.down")
+            }
+            
+            Button(action: exportEntries) {
+              Label("Export to CSV", systemImage: "square.and.arrow.up")
+            }
+            Button(action: { /* Add Import Categories and Exercises action */ }) {
+              Label("Restore DB", systemImage: "tray.and.arrow.down")
+            }
+            Button(action: { /* Add Export Categories and Exercises action */ }) {
+              Label("Back up DB", systemImage: "tray.and.arrow.up")
             }
           } label: {
             Image(systemName: "line.horizontal.3")
@@ -303,6 +306,17 @@ struct HomeView: View {
         }
         Button("Cancel", role: .cancel) {}
       }
+      .confirmationDialog(
+        "Are you sure you want to import the CSV? This will erase all current data and replace it with the content of the file.",
+        isPresented: $showingImportCsvConfirmation,
+        titleVisibility: .visible
+      ) {
+        Button("Import", role: .destructive, action: {
+          showingImportPicker = true
+        }) 
+
+        Button("Cancel", role: .cancel) {}
+      }
     }
     .sheet(isPresented: $showingCalendar) {
       CalendarView(selectedDate: $currentDate)
@@ -310,6 +324,25 @@ struct HomeView: View {
     .sheet(isPresented: $showingSettings) {
       NavigationView {
         SettingsView()
+      }
+    }
+    .fileImporter(
+      isPresented: $showingImportPicker,
+      allowedContentTypes: [.commaSeparatedText]
+    ) { result in
+      switch result {
+      case .success(let url):
+        do {
+          let csvString = try String(contentsOf: url, encoding: .utf8)
+          let success = DatabaseHelper.shared.importFromCSV(csvString: csvString)
+          if success {
+            fitnessEntries = DatabaseHelper.shared.fetchEntries(for: currentDate)
+          }
+        } catch {
+          print("Error reading CSV file.")
+        }
+      case .failure:
+        break
       }
     }
   }

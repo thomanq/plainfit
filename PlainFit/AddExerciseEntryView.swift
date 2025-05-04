@@ -7,7 +7,7 @@ struct AddExerciseEntryView: View {
   @Binding var showEditExerciseSet: Bool
 
   let exerciseType: ExerciseType
-  @State private var nextID: Int64 = 0
+  @State private var nextId: Int64 = 0
   @State private var exerciseDate: Date
   @State private var hours: String = ""
   @State private var minutes: String = ""
@@ -24,21 +24,32 @@ struct AddExerciseEntryView: View {
 
   @State private var exercises: [FitnessEntry] = []
   @State private var isEditing: Bool = false
-  @State private var editingExerciseID: Int64 = 0
-  @State private var setID: Int64
+  @State private var editingExerciseId: Int64 = 0
+  @State private var setId: Int64
   @State private var showErrorModal: Bool = false
   @State private var errorMessage: String = ""
   @State private var showingDeleteConfirmation: Bool = false
 
   init(
     exerciseType: ExerciseType? = nil, selectedDate: Date, showCategoryPicker: Binding<Bool>,
-    showEditExerciseSet: Binding<Bool>, setID: Int64? = nil
+    showEditExerciseSet: Binding<Bool>, setId: Int64? = nil
   ) {
-    if let setID = setID {
-      _setID = State(initialValue: setID)
-      _exercises = State(initialValue: DatabaseHelper.shared.fetchEntriesBySetId(setId: setID))
+    let selectedDateWithCurrentTime =
+      Calendar.current.date(
+        bySettingHour: Calendar.current.component(.hour, from: Date()),
+        minute: Calendar.current.component(.minute, from: Date()),
+        second: Calendar.current.component(.second, from: Date()), of: selectedDate) ?? selectedDate
+
+      _exerciseDate = State(initialValue: selectedDateWithCurrentTime)
+
+    if let setId = setId {
+      _setId = State(initialValue: setId)
+      _exercises = State(initialValue: DatabaseHelper.shared.fetchEntriesBySetId(setId: setId))
+      if let firstExercise = _exercises.wrappedValue.last {
+        _exerciseDate = State(initialValue: firstExercise.date)
+      }
     } else {
-      _setID = State(initialValue: DatabaseHelper.shared.generateSetID())
+      _setId = State(initialValue: DatabaseHelper.shared.generateSetId())
     }
 
     if let exerciseType = exerciseType {
@@ -53,7 +64,6 @@ struct AddExerciseEntryView: View {
     _showCategoryPicker = showCategoryPicker
     _showEditExerciseSet = showEditExerciseSet
 
-    _exerciseDate = State(initialValue: selectedDate)
     _distanceUnit = State(initialValue: unitSystem == .imperial ? "mi" : "km")
     _weightUnit = State(initialValue: unitSystem == .imperial ? "lbs" : "kg")
 
@@ -219,7 +229,7 @@ struct AddExerciseEntryView: View {
             titleVisibility: .visible
           ) {
             Button("Delete", role: .destructive) {
-              DatabaseHelper.shared.deleteEntriesBySetId(setId: setID)
+              DatabaseHelper.shared.deleteEntriesBySetId(setId: setId)
               dismiss()
             }
             Button("Cancel", role: .cancel) {}
@@ -244,19 +254,19 @@ struct AddExerciseEntryView: View {
     let weightValue = Float(weight)
 
     let newExercise = FitnessEntry(
-      id: nextID,
+      id: nextId,
       exerciseName: exerciseType.name,
       exerciseType: exerciseType.type,
       duration: totalDurationMs,
       date: exerciseDate,
-      set_id: setID,
+      setId: setId,
       reps: Int32(reps) ?? 0,
       distance: distanceValue,
       distanceUnit: !distance.isEmpty ? distanceUnit : nil,
       weight: weightValue,
       weightUnit: !weight.isEmpty ? weightUnit : nil
     )
-    nextID += 1
+    nextId += 1
 
     exercises.append(newExercise)
 
@@ -267,7 +277,7 @@ struct AddExerciseEntryView: View {
   private func saveExercise() {
     guard !exercises.isEmpty else { return }
 
-    DatabaseHelper.shared.deleteEntriesBySetId(setId: setID)
+    DatabaseHelper.shared.deleteEntriesBySetId(setId: setId)
 
     for exercise in exercises {
       _ = DatabaseHelper.shared.insertEntry(
@@ -275,7 +285,7 @@ struct AddExerciseEntryView: View {
         exerciseType: exercise.exerciseType,
         duration: exercise.duration,
         date: exerciseDate,
-        set_id: setID,  // Use the generated set ID
+        setId: setId,  // Use the generated set Id
         reps: exercise.reps,
         distance: exercise.distance,
         distanceUnit: exercise.distanceUnit,
@@ -294,7 +304,7 @@ struct AddExerciseEntryView: View {
 
   private func editExercise(_ exercise: FitnessEntry) {
     isEditing = true
-    editingExerciseID = exercise.id
+    editingExerciseId = exercise.id
 
     // Restore values to fields
     hours = String(exercise.duration / 3_600_000)
@@ -311,11 +321,12 @@ struct AddExerciseEntryView: View {
     distanceUnit = exercise.distanceUnit ?? (unitSystem == .imperial ? "mi" : "km")
     weight = exercise.weight != nil ? String(exercise.weight!) : ""
     weightUnit = exercise.weightUnit ?? (unitSystem == .imperial ? "lbs" : "kg")
+    exerciseDate = exercise.date
   }
 
   private func saveEditedExercise() {
 
-    if let index = exercises.firstIndex(where: { $0.id == editingExerciseID }) {
+    if let index = exercises.firstIndex(where: { $0.id == editingExerciseId }) {
       let existingExercise = exercises[index]
       exercises[index] = FitnessEntry(
         id: existingExercise.id,
@@ -323,7 +334,7 @@ struct AddExerciseEntryView: View {
         exerciseType: existingExercise.exerciseType,
         duration: calculateDuration(),
         date: exerciseDate,
-        set_id: existingExercise.set_id,
+        setId: existingExercise.setId,
         reps: Int32(reps) ?? 0,
         distance: Float(distance),
         distanceUnit: !distance.isEmpty ? distanceUnit : nil,
