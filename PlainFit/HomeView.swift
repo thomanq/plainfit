@@ -26,17 +26,37 @@ struct HomeView: View {
   @State private var showingDeleteConfirmation = false
   @State private var setToDelete: Int64? = nil
 
-  private func export() {
+  func exportToCSVFile() -> URL? {
+    let dateFormatter = DateFormatter()
+    dateFormatter.dateFormat = "yyyy-MM-dd_HH-mm-ss"
+    let dateSuffix = dateFormatter.string(from: Date())
+    let fileName = "PlainFit_Export_\(dateSuffix).csv"
+
     let csvString = DatabaseHelper.shared.exportToCSV()
-    let activityViewController = UIActivityViewController(
-      activityItems: [csvString],
-      applicationActivities: nil
-    )
-    if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
-      let window = windowScene.windows.first,
-      let rootViewController = window.rootViewController
-    {
-      rootViewController.present(activityViewController, animated: true)
+
+    do {
+        let fileURL = FileManager.default.temporaryDirectory.appendingPathComponent(fileName)
+        try csvString.write(to: fileURL, atomically: true, encoding: .utf8)
+        return fileURL
+    } catch {
+        print("Error writing CSV to file: \(error)")
+        return nil
+    }
+  }
+
+  private func exportEntries() {
+    if let fileURL = exportToCSVFile() {
+        let activityViewController = UIActivityViewController(
+            activityItems: [fileURL],
+            applicationActivities: nil
+        )
+        if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
+           let window = windowScene.windows.first,
+           let rootViewController = window.rootViewController {
+            rootViewController.present(activityViewController, animated: true)
+        }
+    } else {
+        print("Failed to generate CSV file.")
     }
   }
 
@@ -242,8 +262,19 @@ struct HomeView: View {
             Button(action: { showingSettings = true }) {
               Label("Settings", systemImage: "gear")
             }
-            Button(action: export) {
-              Label("Export to CSV", systemImage: "square.and.arrow.up")
+            Menu("Import / Export", systemImage: "arrow.left.arrow.right") {
+              Button(action: { /* Add Import from CSV action */ }) {
+                Label("Import CSV", systemImage: "square.and.arrow.down")
+              }
+              Button(action: exportEntries) {
+                Label("Export to CSV", systemImage: "square.and.arrow.up")
+              }
+              Button(action: { /* Add Import Categories and Exercises action */ }) {
+                Label("Restore DB", systemImage: "tray.and.arrow.down")
+              }
+              Button(action: { /* Add Export Categories and Exercises action */ }) {
+                Label("Back up DB", systemImage: "tray.and.arrow.up")
+              }
             }
           } label: {
             Image(systemName: "line.horizontal.3")

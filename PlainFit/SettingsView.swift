@@ -46,7 +46,14 @@ struct SettingsView: View {
       }
 
       Section(header: Text("About")) {
-        NavigationLink(destination: Text("Version 1.0")) {
+        NavigationLink(
+          destination: VStack {
+            Text("Version 1.0")
+            Link(
+              "https://github.com/thomanq/plainfit",
+              destination: URL(string: "https://github.com/thomanq/plainfit")!)
+          }
+        ) {
           Label("Version", systemImage: "info.circle")
         }
         NavigationLink(
