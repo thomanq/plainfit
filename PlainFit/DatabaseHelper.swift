@@ -649,7 +649,7 @@ class DatabaseHelper {
 
       let expectedHeaders = getFitnessEntriesHeaders()
       let actualHeaders = dataFrame.columns.map { $0.name }
-      
+
       guard Set(expectedHeaders) == Set(actualHeaders) else {
         return false
       }
@@ -659,11 +659,12 @@ class DatabaseHelper {
 
         for row in dataFrame.rows {
           guard let duration = row["duration"] as? Int,
-                let setId = row["setId"] as? Int,
-                let reps = row["reps"] as? Int,
-                let exerciseName = row["exerciseName"] as? String,
-                let exerciseType = row["exerciseType"] as? String,
-                let dateString = row["date"] as? String else {
+            let setId = row["setId"] as? Int,
+            let reps = row["reps"] as? Int,
+            let exerciseName = row["exerciseName"] as? String,
+            let exerciseType = row["exerciseType"] as? String,
+            let dateString = row["date"] as? String
+          else {
             return false
           }
 
@@ -673,34 +674,34 @@ class DatabaseHelper {
 
           let distance: Float? = {
             if let val = row["distance"] as? Double {
-                return Float(val)
+              return Float(val)
             }
             if let val = row["distance"] as? String, val.lowercased() != "nil" {
-                return Float(val)
+              return Float(val)
             }
             return nil
           }()
-          
+
           let distanceUnit: String? = {
             if let val = row["distanceUnit"] as? String, val.lowercased() != "nil" {
-                return val
+              return val
             }
             return nil
           }()
-          
+
           let weight: Float? = {
             if let val = row["weight"] as? Double {
-                return Float(val)
+              return Float(val)
             }
             if let val = row["weight"] as? String, val.lowercased() != "nil" {
-                return Float(val)
+              return Float(val)
             }
             return nil
           }()
-          
+
           let weightUnit: String? = {
             if let val = row["weightUnit"] as? String, val.lowercased() != "nil" {
-                return val
+              return val
             }
             return nil
           }()
@@ -728,6 +729,29 @@ class DatabaseHelper {
       }
       return true
     } catch {
+      return false
+    }
+  }
+
+  func restoreDatabase(from backupUrl: URL) -> Bool {
+    do {
+      let databaseURL = try FileManager.default.url(
+        for: .documentDirectory,
+        in: .userDomainMask,
+        appropriateFor: nil,
+        create: true
+      ).appendingPathComponent("plainfit.sqlite")
+
+      if FileManager.default.fileExists(atPath: databaseURL.path) {
+        try FileManager.default.removeItem(at: databaseURL)
+      }
+
+      try FileManager.default.copyItem(at: backupUrl, to: databaseURL)
+
+      setupDatabase()
+      return true
+    } catch {
+      print("Error restoring database: \(error)")
       return false
     }
   }

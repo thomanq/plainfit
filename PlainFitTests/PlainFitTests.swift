@@ -1,10 +1,3 @@
-//
-//  PlainFitTests.swift
-//  PlainFitTests
-//
-//  Created by Thomas on 27/04/2025.
-//
-
 import Testing
 @testable import PlainFit
 

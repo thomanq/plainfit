@@ -1,11 +1,25 @@
-//
-//  ContentView.swift
-//  PlainFit
-//
-//  Created by Thomas on 27/04/2025.
-//
-
 import SwiftUI
+import UniformTypeIdentifiers
+
+extension UTType {
+  static var sqliteDatabase: UTType {
+    UTType(exportedAs: "com.sqlite.database")
+  }
+}
+
+private enum ImportType {
+  case csv
+  case database
+
+  var contentTypes: [UTType] {
+    switch self {
+    case .csv:
+      return [.commaSeparatedText]
+    case .database:
+      return [.sqliteDatabase, UTType(filenameExtension: "db")!]
+    }
+  }
+}
 
 struct HomeView: View {
   @State private var exerciseName: String = ""
@@ -27,38 +41,74 @@ struct HomeView: View {
   @State private var showingImportCsvConfirmation = false
   @State private var setToDelete: Int64? = nil
   @State private var showingImportPicker = false
+  @State private var showingRestoreDbConfirmation = false
+  @State private var showingRestoreDbPicker = false
+  @State private var currentImportType: ImportType?
+  @State private var isFileImporterPresented = false
 
   func exportToCSVFile() -> URL? {
     let dateFormatter = DateFormatter()
-    dateFormatter.dateFormat = "yyyy-MM-dd_HH-mm-ss"
+    dateFormatter.dateFormat = "yyyyMMdd_HHmmss"
     let dateSuffix = dateFormatter.string(from: Date())
-    let fileName = "PlainFit_Export_\(dateSuffix).csv"
+    let fileName = "PlainFit_\(dateSuffix).csv"
 
     let csvString = DatabaseHelper.shared.exportToCSV()
 
     do {
-        let fileURL = FileManager.default.temporaryDirectory.appendingPathComponent(fileName)
-        try csvString.write(to: fileURL, atomically: true, encoding: .utf8)
-        return fileURL
+      let fileURL = FileManager.default.temporaryDirectory.appendingPathComponent(fileName)
+      try csvString.write(to: fileURL, atomically: true, encoding: .utf8)
+      return fileURL
     } catch {
-        print("Error writing CSV to file: \(error)")
-        return nil
+      print("Error writing CSV to file: \(error)")
+      return nil
     }
   }
 
   private func exportEntries() {
     if let fileURL = exportToCSVFile() {
-        let activityViewController = UIActivityViewController(
-            activityItems: [fileURL],
-            applicationActivities: nil
-        )
-        if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
-           let window = windowScene.windows.first,
-           let rootViewController = window.rootViewController {
-            rootViewController.present(activityViewController, animated: true)
-        }
+      let activityViewController = UIActivityViewController(
+        activityItems: [fileURL],
+        applicationActivities: nil
+      )
+      if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
+        let window = windowScene.windows.first,
+        let rootViewController = window.rootViewController
+      {
+        rootViewController.present(activityViewController, animated: true)
+      }
     } else {
-        print("Failed to generate CSV file.")
+      print("Failed to generate CSV file.")
+    }
+  }
+
+  private func backupDatabase() {
+    let dateFormatter = DateFormatter()
+    dateFormatter.dateFormat = "yyyyMMdd_HHmmss"
+    let dateSuffix = dateFormatter.string(from: Date())
+    let fileName = "PlainFit_\(dateSuffix).db"
+
+    do {
+      let databaseURL = try FileManager.default.url(
+        for: .documentDirectory,
+        in: .userDomainMask,
+        appropriateFor: nil,
+        create: true
+      ).appendingPathComponent("plainfit.sqlite")
+
+      let temporaryURL = FileManager.default.temporaryDirectory.appendingPathComponent(fileName)
+      try FileManager.default.copyItem(at: databaseURL, to: temporaryURL)
+
+      let activityViewController = UIActivityViewController(
+        activityItems: [temporaryURL],
+        applicationActivities: nil
+      )
+      if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
+        let rootViewController = windowScene.windows.first?.rootViewController
+      {
+        rootViewController.present(activityViewController, animated: true)
+      }
+    } catch {
+      print("Error accessing or copying database file: \(error)")
     }
   }
 
@@ -264,20 +314,25 @@ struct HomeView: View {
             Button(action: { showingSettings = true }) {
               Label("Settings", systemImage: "gear")
             }
-            Button(action: {
-              showingImportCsvConfirmation = true
-            }) {
-              Label("Import CSV", systemImage: "square.and.arrow.down")
-            }
-            
-            Button(action: exportEntries) {
-              Label("Export to CSV", systemImage: "square.and.arrow.up")
-            }
-            Button(action: { /* Add Import Categories and Exercises action */ }) {
-              Label("Restore DB", systemImage: "tray.and.arrow.down")
-            }
-            Button(action: { /* Add Export Categories and Exercises action */ }) {
-              Label("Back up DB", systemImage: "tray.and.arrow.up")
+            Menu {
+              Button(action: {
+                showingImportCsvConfirmation = true
+              }) {
+                Label("Import CSV", systemImage: "square.and.arrow.down")
+              }
+              Button(action: exportEntries) {
+                Label("Export to CSV", systemImage: "square.and.arrow.up")
+              }
+              Button(action: {
+                showingRestoreDbConfirmation = true
+              }) {
+                Label("Restore DB", systemImage: "tray.and.arrow.down")
+              }
+              Button(action: backupDatabase) {
+                Label("Back up DB", systemImage: "tray.and.arrow.up")
+              }
+            } label: {
+              Label("Import / Export", systemImage: "arrow.left.arrow.right")
             }
           } label: {
             Image(systemName: "line.horizontal.3")
@@ -311,10 +366,24 @@ struct HomeView: View {
         isPresented: $showingImportCsvConfirmation,
         titleVisibility: .visible
       ) {
-        Button("Import", role: .destructive, action: {
-          showingImportPicker = true
-        }) 
+        Button(
+          "Import", role: .destructive
+        ) {
+          isFileImporterPresented = true
+          currentImportType = .csv
+        }
 
+        Button("Cancel", role: .cancel) {}
+      }
+      .confirmationDialog(
+        "Are you sure you want to restore the database? This will erase all current data in the app.",
+        isPresented: $showingRestoreDbConfirmation,
+        titleVisibility: .visible
+      ) {
+        Button("Restore", role: .destructive) {
+          isFileImporterPresented = true
+          currentImportType = .database
+        }
         Button("Cancel", role: .cancel) {}
       }
     }
@@ -327,22 +396,36 @@ struct HomeView: View {
       }
     }
     .fileImporter(
-      isPresented: $showingImportPicker,
-      allowedContentTypes: [.commaSeparatedText]
+      isPresented: $isFileImporterPresented,
+      allowedContentTypes: currentImportType?.contentTypes ?? []
     ) { result in
       switch result {
       case .success(let url):
-        do {
-          let csvString = try String(contentsOf: url, encoding: .utf8)
-          let success = DatabaseHelper.shared.importFromCSV(csvString: csvString)
-          if success {
-            fitnessEntries = DatabaseHelper.shared.fetchEntries(for: currentDate)
+        if let importType = currentImportType {
+          switch importType {
+          case .csv:
+            do {
+              let csvString = try String(contentsOf: url, encoding: .utf8)
+              let success = DatabaseHelper.shared.importFromCSV(csvString: csvString)
+              if success {
+                fitnessEntries = DatabaseHelper.shared.fetchEntries(for: currentDate)
+              }
+            } catch {
+              print("Error reading CSV file")
+            }
+          case .database:
+            if DatabaseHelper.shared.restoreDatabase(from: url) {
+              fitnessEntries = DatabaseHelper.shared.fetchEntries(for: currentDate)
+            }
           }
-        } catch {
-          print("Error reading CSV file.")
         }
       case .failure:
+        print("Failed to import file")
         break
+      }
+      DispatchQueue.main.async {
+        currentImportType = nil
+        isFileImporterPresented = false
       }
     }
   }
