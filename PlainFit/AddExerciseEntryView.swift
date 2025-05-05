@@ -18,6 +18,7 @@ struct AddExerciseEntryView: View {
   @State private var distanceUnit: String = ""
   @State private var weight: String = ""
   @State private var weightUnit: String = ""
+  @State private var description: String = ""
 
   private var distanceUnits: [String] = []
   private var weightUnits: [String] = []
@@ -148,6 +149,11 @@ struct AddExerciseEntryView: View {
           }
         }
       }
+
+      Section(header: Text("Description (Optional)")) {
+        TextField("Description", text: $description)
+      }
+
       Button(action: {
         if weight.isEmpty && reps.isEmpty && distance.isEmpty && hours.isEmpty && minutes.isEmpty
           && seconds.isEmpty && milliseconds.isEmpty
@@ -183,6 +189,10 @@ struct AddExerciseEntryView: View {
               }
               if let weight = exercise.weight, let unit = exercise.weightUnit {
                 Text("Weight: \(formatValue(weight)) \(unit)")
+              }
+              if let description = exercise.description, !description.isEmpty {
+                Text("Description: \(description)")
+                  .foregroundColor(.secondary)
               }
             }
             .swipeActions(edge: .leading, allowsFullSwipe: true) {
@@ -264,7 +274,8 @@ struct AddExerciseEntryView: View {
       distance: distanceValue,
       distanceUnit: !distance.isEmpty ? distanceUnit : nil,
       weight: weightValue,
-      weightUnit: !weight.isEmpty ? weightUnit : nil
+      weightUnit: !weight.isEmpty ? weightUnit : nil,
+      description: !description.isEmpty ? description: nil
     )
     nextId += 1
 
@@ -290,7 +301,8 @@ struct AddExerciseEntryView: View {
         distance: exercise.distance,
         distanceUnit: exercise.distanceUnit,
         weight: exercise.weight,
-        weightUnit: exercise.weightUnit
+        weightUnit: exercise.weightUnit,
+        description: exercise.description
       )
     }
 
@@ -322,6 +334,7 @@ struct AddExerciseEntryView: View {
     weight = exercise.weight != nil ? String(exercise.weight!) : ""
     weightUnit = exercise.weightUnit ?? (unitSystem == .imperial ? "lbs" : "kg")
     exerciseDate = exercise.date
+    description = exercise.description ?? ""
   }
 
   private func saveEditedExercise() {
@@ -339,7 +352,8 @@ struct AddExerciseEntryView: View {
         distance: Float(distance),
         distanceUnit: !distance.isEmpty ? distanceUnit : nil,
         weight: Float(weight),
-        weightUnit: !weight.isEmpty ? weightUnit : nil
+        weightUnit: !weight.isEmpty ? weightUnit : nil,
+        description: !description.isEmpty ? description: nil
       )
     }
 
@@ -359,6 +373,7 @@ struct AddExerciseEntryView: View {
     reps = ""
     distance = ""
     weight = ""
+    description = ""
   }
 
   private func calculateDuration() -> Int32 {

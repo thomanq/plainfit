@@ -126,5 +126,39 @@
         "Wall Sit": "time"
       }
     }
+  ],
+  "tutorial": [
+    {
+      "exerciseName": "Biceps Curls",
+      "exerciseType": "reps,weight",
+      "setId": "1",
+      "reps": "10",
+      "weight": "20",
+      "description": "Here is a simple exercise, swipe <- left to delete it."
+    },
+    {
+      "exerciseName": "Running (Outdoor)",
+      "exerciseType": "distance,time",
+      "setId": "2",
+      "duration": "600000",
+      "distance": "1.0",
+      "description": "You can also edit exercises by swiping -> right"
+    },
+    {
+      "exerciseName": "Running (Outdoor)",
+      "exerciseType": "distance,time",
+      "setId": "2",
+      "duration": "600000",
+      "distance": "1.0",
+      "description": "In the 'Edit Exercise' menu, you can swipe -> right to edit single entries within a set."
+    },
+    {
+      "exerciseName": "Running (Outdoor)",
+      "exerciseType": "distance,time",
+      "setId": "2",
+      "duration": "600000",
+      "distance": "1.0",
+      "description": "Swiping right to edit and left to delete works for deleting/editing categories and exercise types as well."
+    }
   ]
 }
