@@ -5,11 +5,14 @@ import TabularData
 typealias CategoryName = String
 typealias ExerciseTypeName = String
 typealias ExerciseAttributes = String
+typealias FieldName = String
+typealias FieldValue = String
 typealias ExerciseDetails = [ExerciseTypeName: ExerciseAttributes]
 typealias ExerciseCategory = [CategoryName: ExerciseDetails]
 
 struct ExercisesData: Codable {
   let exercises: [ExerciseCategory]
+  let tutorial: [[FieldName: FieldValue]]
 }
 
 // Partial Category for insertion
@@ -93,6 +96,7 @@ struct PartialFitnessEntry: Encodable, PersistableRecord {
   let distanceUnit: String?
   let weight: Float?
   let weightUnit: String?
+  let description: String?
 
   static let databaseTableName = "fitness_entries"
 
@@ -109,6 +113,7 @@ struct PartialFitnessEntry: Encodable, PersistableRecord {
       t.column("distanceUnit", .text)
       t.column("weight", .double)
       t.column("weightUnit", .text)
+      t.column("description", .text)
     }
   }
 }
@@ -132,6 +137,7 @@ struct FitnessEntry: Identifiable, Codable, FetchableRecord, PersistableRecord {
   let distanceUnit: String?
   let weight: Float?
   let weightUnit: String?
+  let description: String?
 
   func toCSVRow() -> String {
     let dateString = FitnessEntry.dateFormatter.string(from: date)
@@ -139,9 +145,10 @@ struct FitnessEntry: Identifiable, Codable, FetchableRecord, PersistableRecord {
     let distanceUnit = distanceUnit ?? "N/A"
     let weight = weight != nil ? String(weight!) : "N/A"
     let weightUnit = weightUnit ?? "N/A"
+    let description = description ?? "N/A"
 
     return
-      "\(id),\"\(exerciseName)\",\"\(exerciseType)\",\(duration),\"\(dateString)\",\(setId),\(reps),\(distance),\(distanceUnit),\(weight),\(weightUnit)\n"
+      "\(id),\"\(exerciseName)\",\"\(exerciseType)\",\(duration),\"\(dateString)\",\(setId),\(reps),\(distance),\(distanceUnit),\(weight),\(weightUnit),\"\(description)\"\n"
   }
 }
 
@@ -158,7 +165,8 @@ func getFitnessEntriesHeaders() -> [String] {
       distance: nil,
       distanceUnit: nil,
       weight: nil,
-      weightUnit: nil
+      weightUnit: nil,
+      description: nil
     ))
 
   return mirror.children.compactMap { $0.label }
@@ -263,6 +271,37 @@ class DatabaseHelper {
               }
             }
           }
+
+          for tutorialEntry in exercises.tutorial {
+            guard let exerciseName = tutorialEntry["exerciseName"],
+              let exerciseType = tutorialEntry["exerciseType"],
+              let setIdString = tutorialEntry["setId"],
+              let setId = Int64(setIdString)
+            else {
+              continue
+            }
+
+            let duration = tutorialEntry["duration"].flatMap { Int32($0) } ?? 0
+            let reps = tutorialEntry["reps"].flatMap { Int32($0) } ?? 0
+            let weight = tutorialEntry["weight"].flatMap { Float($0) } 
+            let distance = tutorialEntry["distance"].flatMap { Float($0) } 
+            let description = tutorialEntry["description"]
+
+            let partialEntry = PartialFitnessEntry(
+              exerciseName: exerciseName,
+              exerciseType: exerciseType,
+              duration: duration,
+              date: Date(),
+              setId: setId,
+              reps: reps ?? 0,
+              distance: distance,
+              distanceUnit: "mi",
+              weight: weight,
+              weightUnit: "lbs",
+              description: description
+            )
+            try partialEntry.insert(db)
+          }
         }
       }
     } catch {
@@ -309,7 +348,8 @@ class DatabaseHelper {
     distance: Float? = nil,
     distanceUnit: String? = nil,
     weight: Float? = nil,
-    weightUnit: String? = nil
+    weightUnit: String? = nil,
+    description: String? = nil
   ) -> Int64? {
     do {
       let partialEntry = PartialFitnessEntry(
@@ -322,7 +362,8 @@ class DatabaseHelper {
         distance: distance,
         distanceUnit: distanceUnit,
         weight: weight,
-        weightUnit: weightUnit
+        weightUnit: weightUnit,
+        description: description
       )
 
       var entry = try dbQueue.write { db in
@@ -706,6 +747,13 @@ class DatabaseHelper {
             return nil
           }()
 
+          let description: String? = {
+            if let val = row["description"] as? String, val.lowercased() != "nil" {
+              return val
+            }
+            return nil
+          }()
+
           let partialEntry = PartialFitnessEntry(
             exerciseName: exerciseName,
             exerciseType: exerciseType,
@@ -716,7 +764,8 @@ class DatabaseHelper {
             distance: distance,
             distanceUnit: distanceUnit,
             weight: weight,
-            weightUnit: weightUnit
+            weightUnit: weightUnit,
+            description: description
           )
 
           do {

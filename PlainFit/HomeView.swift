@@ -211,41 +211,43 @@ struct HomeView: View {
 
                     // Data rows
                     ForEach(Array(entries.enumerated()), id: \.element.id) { index, entry in
-                      HStack {
-                        Text("\(index + 1)")
-                          .font(.system(.body, design: .rounded))
-                          .foregroundColor(.secondary)
-                          .frame(width: 20, alignment: .leading)
+                      VStack(alignment: .leading) {
+                        HStack {
+                          Text("\(index + 1)")
+                            .font(.system(.body, design: .rounded))
+                            .foregroundColor(.secondary)
+                            .frame(width: 20, alignment: .leading)
 
-                        if hasDuration {
-                          Text(formatDuration(entry.duration))
-                            .font(.system(.body, design: .rounded))
-                            .frame(minWidth: 80, maxWidth: .infinity, alignment: .leading)
+                          if hasDuration {
+                            Text(formatDuration(entry.duration))
+                              .font(.system(.body, design: .rounded))
+                              .frame(minWidth: 80, maxWidth: .infinity, alignment: .leading)
+                          }
+                          if hasReps {
+                            Text(entry.reps > 0 ? "\(entry.reps)" : "-")
+                              .font(.system(.body, design: .rounded))
+                              .frame(maxWidth: .infinity, alignment: .leading)
+                          }
+                          if hasDistance {
+                            Text(entry.distance.map { String(format: "%.1f", $0) } ?? "-")
+                              .font(.system(.body, design: .rounded))
+                              .frame(maxWidth: .infinity, alignment: .leading)
+                          }
+                          if hasWeight {
+                            Text(entry.weight.map { String(format: "%.1f", $0) } ?? "-")
+                              .font(.system(.body, design: .rounded))
+                              .frame(maxWidth: .infinity, alignment: .leading)
+                          }
                         }
-                        if hasReps {
-                          Text(entry.reps > 0 ? "\(entry.reps)" : "-")
-                            .font(.system(.body, design: .rounded))
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                        }
-                        if hasDistance {
-                          Text(entry.distance.map { String(format: "%.1f", $0) } ?? "-")
-                            .font(.system(.body, design: .rounded))
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                        }
-                        if hasWeight {
-                          Text(entry.weight.map { String(format: "%.1f", $0) } ?? "-")
-                            .font(.system(.body, design: .rounded))
-                            .frame(maxWidth: .infinity, alignment: .leading)
+                        if let description = entry.description, !description.isEmpty {
+                          Text(description)
+                            .font(.system(.subheadline, design: .rounded))
+                            .foregroundColor(.secondary)
+                            .padding(.top, 4)
+                            .padding(.leading, 28)
                         }
                       }
-                      .padding(.vertical, 12)
-                      .padding(.horizontal, 8)
-                      .background(
-                        RoundedRectangle(cornerRadius: 8)
-                          .fill(Color.white)
-                          .shadow(color: Color.black.opacity(0.03), radius: 2, x: 0, y: 1)
-                      )
-                      .padding(.vertical, 2)
+                      .padding(.vertical, 8)
                     }
                   }
                   .padding(.horizontal)
