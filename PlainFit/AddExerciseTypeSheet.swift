@@ -4,7 +4,7 @@ struct AddExerciseTypeSheet: View {
   @Environment(\.dismiss) var dismiss
   @State private var newName = ""
   @State private var newType = ""
-  @State private var selectedCategoryId: Int64?
+  @State private var category: Category?
   @State private var categories: [Category] = []
   @State private var selectedTypes: Set<String> = []
   @State private var showingNewCategorySheet = false
@@ -12,16 +12,32 @@ struct AddExerciseTypeSheet: View {
   @State private var showError = false
   @State private var errorMessage = ""
   @State private var showingDeleteConfirmation = false
+  @State private var iconType: String
+  @State private var selectedIcon: String
+  @State private var selectedColor: String
+  @State private var isIconPickerPresented: Bool = false
 
   private let availableTypes = ["weight", "reps", "distance", "time"]
   let exerciseTypeToEdit: ExerciseType?
 
   init(
-    defaultCategoryId: Int64? = nil,
+    category: Category? = nil,
     exerciseTypeToEdit: ExerciseType? = nil
   ) {
-    _selectedCategoryId = State(initialValue: defaultCategoryId)
+    _category = State(initialValue: category)
     self.exerciseTypeToEdit = exerciseTypeToEdit
+
+    if exerciseTypeToEdit == nil || exerciseTypeToEdit?.iconName == nil
+      || exerciseTypeToEdit?.iconColor == nil
+    {
+      _iconType = State(initialValue: "default")
+      _selectedIcon = State(initialValue: "circle.fill")
+      _selectedColor = State(initialValue: Color(.blue).toHex())
+    } else {
+      _iconType = State(initialValue: "custom")
+      _selectedIcon = State(initialValue: exerciseTypeToEdit?.iconName ?? "circle.fill")
+      _selectedColor = State(initialValue: exerciseTypeToEdit?.iconColor ?? Color(.blue).toHex())
+    }
 
     if let editType = exerciseTypeToEdit {
       _newName = State(initialValue: editType.name)
@@ -56,20 +72,48 @@ struct AddExerciseTypeSheet: View {
           }
         }
 
-        HStack {
-          Picker("Category", selection: $selectedCategoryId) {
-            Text("No Category").tag(nil as Int64?)
-            ForEach(categories) { category in
-              Text(category.name).tag(category.id as Int64?)
+        Section(header: Text("Category")) {
+          HStack {
+            Picker("Category", selection: $category) {
+              Text("No Category").tag(nil as Category?)
+              ForEach(categories) { category in
+                Text(category.name).tag(category as Category?)
+              }
             }
+            .pickerStyle(.menu)
+
+            Button(action: { showingNewCategorySheet = true }) {
+              Image(systemName: "plus.circle.fill")
+                .foregroundColor(.blue)
+            }
+          }
+        }
+
+        Section(header: Text("Icon")) {
+          Picker("Icon", selection: $iconType) {
+            Text("From category").tag("default")
+            Text("Custom").tag("custom")
           }
           .pickerStyle(.menu)
 
-          Button(action: { showingNewCategorySheet = true }) {
-            Image(systemName: "plus.circle.fill")
-              .foregroundColor(.blue)
+          if iconType == "custom" {
+            HStack {
+              Text("Selected Icon:")
+
+              Image(systemName: selectedIcon)
+                .resizable()
+                .scaledToFit()
+                .frame(width: 30, height: 30)
+                .foregroundColor(Color(hex: selectedColor))
+              Spacer()
+              Button("Pick Icon") {
+                isIconPickerPresented = true
+              }
+            }
           }
+
         }
+
         Section {
           Button(exerciseTypeToEdit == nil ? "Add Exercise Type" : "Edit Exercise Type") {
             if newName.isEmpty {
@@ -78,29 +122,46 @@ struct AddExerciseTypeSheet: View {
             } else if selectedTypes.isEmpty {
               errorMessage = "Please select at least one exercise type"
               showError = true
-            } else if selectedCategoryId == nil {
+            } else if category == nil {
               errorMessage = "Please select a category"
               showError = true
             } else {
               if let exerciseType = exerciseTypeToEdit {
-                _ = DatabaseHelper.shared.updateExerciseType(
-                  id: exerciseType.id, name: newName, type: newType)
-                if let categoryId = selectedCategoryId {
+                let updatedExerciseType = ExerciseType(
+                  id: exerciseType.id,
+                  name: newName,
+                  type: newType,
+                  iconName: iconType == "default" ? nil : selectedIcon,
+                  iconColor: iconType == "default" ? nil : selectedColor
+                )
+                _ = DatabaseHelper.shared.updateExerciseType(updatedExerciseType)
+                if let category = category {
                   _ = DatabaseHelper.shared.updateExerciseTypeCategory(
-                    exerciseTypeId: exerciseType.id, categoryId: categoryId)
+                    exerciseTypeId: exerciseType.id, categoryId: category.id
+                  )
                 }
               } else {
-                if let typeId = DatabaseHelper.shared.insertExerciseType(
-                  name: newName, type: newType)
-                {
-                  _ = DatabaseHelper.shared.linkExerciseTypeToCategory(
-                    exerciseTypeId: typeId, categoryId: selectedCategoryId!)
+                if let exerciseType = DatabaseHelper.shared.insertExerciseType(
+                  PartialExerciseType(
+                    name: newName,
+                    type: newType,
+                    iconName: iconType == "default" ? nil : selectedIcon,
+                    iconColor: iconType == "default" ? nil : selectedColor
+                  )
+                ) {
+                  if let category = category {
+                    _ = DatabaseHelper.shared.linkExerciseTypeToCategory(
+                      exerciseTypeId: exerciseType.id, categoryId: category.id
+                    )
+                  }
                 }
               }
               newName = ""
               newType = ""
-              selectedCategoryId = nil
+              category = nil
               selectedTypes.removeAll()
+              selectedIcon = "circle.fill"
+              selectedColor = "#000000FF"
               dismiss()
             }
           }
@@ -139,15 +200,24 @@ struct AddExerciseTypeSheet: View {
       )
       .sheet(isPresented: $showingNewCategorySheet) {
         CategorySheet(
-          categoryName: newCategoryName,
-          onSave: { name in
-            if DatabaseHelper.shared.insertCategory(name: name) != nil {
+          category: Category(
+            id: 0, name: newCategoryName, iconName: "circle.fill", iconColor: Color(.blue).toHex()),
+          onSave: { category in
+            let partialCategory = PartialCategory(
+              name: category.name,
+              iconName: category.iconName,
+              iconColor: category.iconColor
+            )
+            if DatabaseHelper.shared.insertCategory(partialCategory) != nil {
               categories = DatabaseHelper.shared.fetchCategories()
               newCategoryName = ""
               showingNewCategorySheet = false
             }
           }
         )
+      }
+      .sheet(isPresented: $isIconPickerPresented) {
+        IconPicker(selectedIcon: $selectedIcon, selectedColor: $selectedColor)
       }
       .onAppear {
         categories = DatabaseHelper.shared.fetchCategories()

@@ -80,7 +80,7 @@ struct ExerciseTypePickerView: View {
         }
       ) { exerciseType in
         AddExerciseTypeSheet(
-          defaultCategoryId: category.id,
+          category: category,
           exerciseTypeToEdit: exerciseType)
       }
       .confirmationDialog(

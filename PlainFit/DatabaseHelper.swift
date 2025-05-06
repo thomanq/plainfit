@@ -2,28 +2,47 @@ import Foundation
 import GRDB
 import TabularData
 
-typealias CategoryName = String
+struct ExerciseAttributes: Codable {
+  let type: String
+  let iconName: String?
+  let iconColor: String?
+}
+
+struct Icon: Codable {
+  let name: String
+  let color: String
+
+}
 typealias ExerciseTypeName = String
-typealias ExerciseAttributes = String
+struct CategoryDetails: Codable {
+  let icon: Icon
+  let exercises: [ExerciseTypeName: ExerciseAttributes]
+}
+typealias CategoryName = String
+typealias ExerciseCategory = [CategoryName: CategoryDetails]
+
 typealias FieldName = String
 typealias FieldValue = String
-typealias ExerciseDetails = [ExerciseTypeName: ExerciseAttributes]
-typealias ExerciseCategory = [CategoryName: ExerciseDetails]
 
 struct ExercisesData: Codable {
-  let exercises: [ExerciseCategory]
+  let categories: ExerciseCategory
   let tutorial: [[FieldName: FieldValue]]
 }
 
 // Partial Category for insertion
 struct PartialCategory: Encodable, PersistableRecord {
   var name: String
+  var iconName: String
+  var iconColor: String
+
   static let databaseTableName = "categories"
 
   static func defineTable(_ db: Database) throws {
     try db.create(table: databaseTableName, ifNotExists: true) { t in
       t.autoIncrementedPrimaryKey("id")
       t.column("name", .text).notNull().unique()
+      t.column("iconName", .text).notNull()
+      t.column("iconColor", .text).notNull()
     }
   }
 }
@@ -31,18 +50,22 @@ struct PartialCategory: Encodable, PersistableRecord {
 struct Category: Identifiable, Hashable, Codable, PersistableRecord, FetchableRecord {
   var id: Int64
   var name: String
+  var iconName: String
+  var iconColor: String
 
-  // Add the table name property to match PartialCategory
   static let databaseTableName = "categories"
 
   // Hashable conformance
   func hash(into hasher: inout Hasher) {
     hasher.combine(id)
     hasher.combine(name)
+    hasher.combine(iconName)
+    hasher.combine(iconColor)
   }
 
   static func == (lhs: Category, rhs: Category) -> Bool {
-    return lhs.id == rhs.id && lhs.name == rhs.name
+    return lhs.id == rhs.id && lhs.name == rhs.name && lhs.iconName == rhs.iconName
+      && lhs.iconColor == rhs.iconColor
   }
 
 }
@@ -51,6 +74,9 @@ struct Category: Identifiable, Hashable, Codable, PersistableRecord, FetchableRe
 struct PartialExerciseType: Encodable, PersistableRecord {
   var name: String
   var type: String
+  var iconName: String?
+  var iconColor: String?
+
   // Define table name explicitly
   static let databaseTableName = "exercise_types"
 
@@ -60,6 +86,8 @@ struct PartialExerciseType: Encodable, PersistableRecord {
       t.autoIncrementedPrimaryKey("id")
       t.column("name", .text).notNull()
       t.column("type", .text).notNull()
+      t.column("iconName", .text)
+      t.column("iconColor", .text)
     }
   }
 }
@@ -68,6 +96,8 @@ struct ExerciseType: Identifiable, Hashable, Codable, PersistableRecord, Fetchab
   var id: Int64
   var name: String
   var type: String
+  var iconName: String?
+  var iconColor: String?
 
   // Add the table name to match PartialExerciseType
   static let databaseTableName = "exercise_types"
@@ -77,17 +107,18 @@ struct ExerciseType: Identifiable, Hashable, Codable, PersistableRecord, Fetchab
     hasher.combine(id)
     hasher.combine(name)
     hasher.combine(type)
+    hasher.combine(iconName)
+    hasher.combine(iconColor)
   }
 
   static func == (lhs: ExerciseType, rhs: ExerciseType) -> Bool {
     return lhs.id == rhs.id && lhs.name == rhs.name && lhs.type == rhs.type
+      && lhs.iconName == rhs.iconName && lhs.iconColor == rhs.iconColor
   }
 }
 
 // Partial FitnessEntry for insertion
 struct PartialFitnessEntry: Encodable, PersistableRecord {
-  let exerciseName: String
-  let exerciseType: String
   let duration: Int32
   let date: Date
   let setId: Int64
@@ -97,14 +128,13 @@ struct PartialFitnessEntry: Encodable, PersistableRecord {
   let weight: Float?
   let weightUnit: String?
   let description: String?
+  let exerciseTypeId: Int64
 
   static let databaseTableName = "fitness_entries"
 
   static func defineTable(_ db: Database) throws {
     try db.create(table: databaseTableName, ifNotExists: true) { t in
       t.autoIncrementedPrimaryKey("id")
-      t.column("exerciseName", .text).notNull()
-      t.column("exerciseType", .text).notNull()
       t.column("duration", .integer).notNull()
       t.column("date", .datetime).notNull()
       t.column("setId", .integer).notNull()
@@ -114,6 +144,7 @@ struct PartialFitnessEntry: Encodable, PersistableRecord {
       t.column("weight", .double)
       t.column("weightUnit", .text)
       t.column("description", .text)
+      t.column("exerciseTypeId", .integer).notNull().references("exercise_types")
     }
   }
 }
@@ -127,8 +158,6 @@ struct FitnessEntry: Identifiable, Codable, FetchableRecord, PersistableRecord {
   }()
 
   var id: Int64
-  let exerciseName: String
-  let exerciseType: String
   let duration: Int32  // Duration in milliseconds
   let date: Date
   let setId: Int64
@@ -138,6 +167,7 @@ struct FitnessEntry: Identifiable, Codable, FetchableRecord, PersistableRecord {
   let weight: Float?
   let weightUnit: String?
   let description: String?
+  let exerciseTypeId: Int64
 
   func toCSVRow() -> String {
     let dateString = FitnessEntry.dateFormatter.string(from: date)
@@ -147,29 +177,30 @@ struct FitnessEntry: Identifiable, Codable, FetchableRecord, PersistableRecord {
     let weightUnit = weightUnit ?? "N/A"
     let description = description ?? "N/A"
 
+    let exerciseType = DatabaseHelper.shared.fetchExerciseTypeBySetId(setId: setId)
+    let exerciseTypeName = exerciseType?.name ?? "N/A"
+    let exerciseTypeType = exerciseType?.type ?? "N/A"
+
     return
-      "\(id),\"\(exerciseName)\",\"\(exerciseType)\",\(duration),\"\(dateString)\",\(setId),\(reps),\(distance),\(distanceUnit),\(weight),\(weightUnit),\"\(description)\"\n"
+      "\(id),\"\(exerciseTypeName)\",\"\(exerciseTypeType)\",\(duration),\"\(dateString)\",\(setId),\(reps),\(distance),\(distanceUnit),\(weight),\(weightUnit),\"\(description)\"\n"
   }
 }
 
 func getFitnessEntriesHeaders() -> [String] {
-  let mirror = Mirror(
-    reflecting: FitnessEntry(
-      id: 0,
-      exerciseName: "",
-      exerciseType: "",
-      duration: 0,
-      date: Date(),
-      setId: 0,
-      reps: 0,
-      distance: nil,
-      distanceUnit: nil,
-      weight: nil,
-      weightUnit: nil,
-      description: nil
-    ))
-
-  return mirror.children.compactMap { $0.label }
+  return [
+    "id",
+    "exerciseName",
+    "exerciseType",
+    "duration",
+    "date",
+    "setId",
+    "reps",
+    "distance",
+    "distanceUnit",
+    "weight",
+    "weightUnit",
+    "description",
+  ]
 }
 
 // Junction table for many-to-many relationship between exercise types and categories
@@ -186,23 +217,6 @@ struct ExerciseTypeCategory: Codable, FetchableRecord, PersistableRecord {
         "exercise_types", onDelete: .cascade)
       t.column("category_id", .integer).notNull().references("categories", onDelete: .cascade)
       t.primaryKey(["exercise_type_id", "category_id"])
-    }
-  }
-}
-
-// Junction table for many-to-many relationship between entries and categories
-struct EntryCategory: Codable, FetchableRecord, PersistableRecord {
-  let entry_id: Int64
-  let category_id: Int64
-
-  static let databaseTableName = "entry_categories"
-
-  // Setup table definition
-  static func defineTable(_ db: Database) throws {
-    try db.create(table: databaseTableName, ifNotExists: true) { t in
-      t.column("entry_id", .integer).notNull().references("fitness_entries", onDelete: .cascade)
-      t.column("category_id", .integer).notNull().references("categories", onDelete: .cascade)
-      t.primaryKey(["entry_id", "category_id"])
     }
   }
 }
@@ -234,7 +248,6 @@ class DatabaseHelper {
         try PartialExerciseType.defineTable(db)
         try PartialFitnessEntry.defineTable(db)
         try ExerciseTypeCategory.defineTable(db)
-        try EntryCategory.defineTable(db)
       }
 
       // Populate with initial data if needed
@@ -252,29 +265,37 @@ class DatabaseHelper {
         try Category.fetchCount(db) > 0
       }
 
-      if !categoriesExist, let exercises = loadExercisesFromJSON() {
+      if !categoriesExist, let exercisesData = loadExercisesFromJSON() {
         try dbQueue.write { db in
-          for exerciseCategory in exercises.exercises {
-            for (categoryName, exerciseTypes) in exerciseCategory {
-              // Insert category
-              let partialCategory = PartialCategory(name: categoryName)
-              var category = try partialCategory.insertAndFetch(db, as: Category.self)
+          for (categoryName, categoryDetails) in exercisesData.categories {
+            // Insert category
+            let partialCategory = PartialCategory(
+              name: categoryName,
+              iconName: categoryDetails.icon.name,
+              iconColor: categoryDetails.icon.color
+            )
+            let category = try partialCategory.insertAndFetch(db, as: Category.self)
 
-              // Insert exercise types and link to category
-              for (exerciseName, attributes) in exerciseTypes {
-                let partialExerciseType = PartialExerciseType(name: exerciseName, type: attributes)
-                var exerciseType = try partialExerciseType.insertAndFetch(db, as: ExerciseType.self)
+            // Insert exercise types and link to category
+            for (exerciseName, attributes) in categoryDetails.exercises {
+              let partialExerciseType = PartialExerciseType(
+                name: exerciseName,
+                type: attributes.type,
+                iconName: attributes.iconName,
+                iconColor: attributes.iconColor
+              )
+              let exerciseType = try partialExerciseType.insertAndFetch(db, as: ExerciseType.self)
 
-                let link = ExerciseTypeCategory(
-                  exercise_type_id: exerciseType.id, category_id: category.id)
-                try link.insert(db)
-              }
+              let link = ExerciseTypeCategory(
+                exercise_type_id: exerciseType.id,
+                category_id: category.id
+              )
+              try link.insert(db)
             }
           }
 
-          for tutorialEntry in exercises.tutorial {
+          for tutorialEntry in exercisesData.tutorial {
             guard let exerciseName = tutorialEntry["exerciseName"],
-              let exerciseType = tutorialEntry["exerciseType"],
               let setIdString = tutorialEntry["setId"],
               let setId = Int64(setIdString)
             else {
@@ -283,24 +304,27 @@ class DatabaseHelper {
 
             let duration = tutorialEntry["duration"].flatMap { Int32($0) } ?? 0
             let reps = tutorialEntry["reps"].flatMap { Int32($0) } ?? 0
-            let weight = tutorialEntry["weight"].flatMap { Float($0) } 
-            let distance = tutorialEntry["distance"].flatMap { Float($0) } 
+            let weight = tutorialEntry["weight"].flatMap { Float($0) }
+            let distance = tutorialEntry["distance"].flatMap { Float($0) }
             let description = tutorialEntry["description"]
 
-            let partialEntry = PartialFitnessEntry(
-              exerciseName: exerciseName,
-              exerciseType: exerciseType,
-              duration: duration,
-              date: Date(),
-              setId: setId,
-              reps: reps ?? 0,
-              distance: distance,
-              distanceUnit: "mi",
-              weight: weight,
-              weightUnit: "lbs",
-              description: description
-            )
-            try partialEntry.insert(db)
+            if let exerciseTypeId = try ExerciseType.filter(Column("name") == exerciseName)
+              .fetchOne(db)?.id
+            {
+              let partialEntry = PartialFitnessEntry(
+                duration: duration,
+                date: Date(),
+                setId: setId,
+                reps: reps,
+                distance: distance,
+                distanceUnit: "mi",
+                weight: weight,
+                weightUnit: "lbs",
+                description: description,
+                exerciseTypeId: exerciseTypeId
+              )
+              let _ = try partialEntry.insertAndFetch(db, as: FitnessEntry.self)
+            }
           }
         }
       }
@@ -338,39 +362,11 @@ class DatabaseHelper {
     }
   }
 
-  func insertEntry(
-    exerciseName: String,
-    exerciseType: String,
-    duration: Int32,
-    date: Date,
-    setId: Int64,
-    reps: Int32,
-    distance: Float? = nil,
-    distanceUnit: String? = nil,
-    weight: Float? = nil,
-    weightUnit: String? = nil,
-    description: String? = nil
-  ) -> Int64? {
+  func insertEntry(_ partialEntry: PartialFitnessEntry) -> FitnessEntry? {
     do {
-      let partialEntry = PartialFitnessEntry(
-        exerciseName: exerciseName,
-        exerciseType: exerciseType,
-        duration: duration,
-        date: date,
-        setId: setId,
-        reps: reps,
-        distance: distance,
-        distanceUnit: distanceUnit,
-        weight: weight,
-        weightUnit: weightUnit,
-        description: description
-      )
-
-      var entry = try dbQueue.write { db in
+      return try dbQueue.write { db in
         try partialEntry.insertAndFetch(db, as: FitnessEntry.self)
       }
-
-      return entry.id
     } catch {
       print("Error inserting entry: \(error)")
       return nil
@@ -413,6 +409,24 @@ class DatabaseHelper {
     }
   }
 
+  func fetchExerciseTypeBySetId(setId: Int64) -> ExerciseType? {
+    do {
+      return try dbQueue.read { db in
+        let request = """
+          SELECT et.*
+          FROM exercise_types et
+          JOIN fitness_entries fe ON et.id = fe.exerciseTypeId
+          WHERE fe.setId = ?
+          LIMIT 1
+          """
+        return try ExerciseType.fetchOne(db, sql: request, arguments: [setId])
+      }
+    } catch {
+      print("Error fetching exercise type by setId: \(error)")
+      return nil
+    }
+  }
+
   func deleteEntriesBySetId(setId: Int64) {
     do {
       try dbQueue.write { db in
@@ -426,15 +440,12 @@ class DatabaseHelper {
     }
   }
 
-  func insertCategory(name: String) -> Int64? {
+  func insertCategory(_ partialCategory: PartialCategory) -> Category? {
     do {
-      let partialCategory = PartialCategory(name: name)
-
       var category = try dbQueue.write { db in
         try partialCategory.insertAndFetch(db, as: Category.self)
       }
-
-      return category.id
+      return category
     } catch {
       print("Error inserting category: \(error)")
       return nil
@@ -454,16 +465,14 @@ class DatabaseHelper {
     }
   }
 
-  func updateCategory(id: Int64, name: String) -> Bool {
+  func updateCategory(_ category: Category) -> Bool {
     do {
       try dbQueue.write { db in
-        if let category = try Category.fetchOne(db, key: id) {
-          var updatedCategory = category
-          updatedCategory.name = name
-          try updatedCategory.update(db)
-          return true
-        }
-        return false
+        // if var existingCategory = try Category.fetchOne(db, key: category.id) {
+        try category.update(db)
+        return true
+        // }
+        // return false
       }
     } catch {
       print("Error updating category: \(error)")
@@ -484,47 +493,13 @@ class DatabaseHelper {
     return false
   }
 
-  func linkEntryToCategory(entryId: Int64, categoryId: Int64) -> Bool {
+  func insertExerciseType(_ partialExerciseType: PartialExerciseType) -> ExerciseType? {
     do {
-      let link = EntryCategory(entry_id: entryId, category_id: categoryId)
 
-      try dbQueue.write { db in
-        try link.insert(db)
-      }
-      return true
-    } catch {
-      print("Error linking entry to category: \(error)")
-      return false
-    }
-  }
-
-  func getCategoriesForEntry(entryId: Int64) -> [Category] {
-    do {
-      return try dbQueue.read { db in
-        let request = """
-          SELECT c.id, c.name FROM categories c
-          INNER JOIN entry_categories ec ON c.id = ec.category_id
-          WHERE ec.entry_id = ?
-          ORDER BY c.name
-          """
-
-        return try Category.fetchAll(db, sql: request, arguments: [entryId])
-      }
-    } catch {
-      print("Error fetching categories for entry: \(error)")
-      return []
-    }
-  }
-
-  func insertExerciseType(name: String, type: String) -> Int64? {
-    do {
-      let partialExerciseType = PartialExerciseType(name: name, type: type)
-
-      var exerciseType = try dbQueue.write { db in
+      var insertedExerciseType = try dbQueue.write { db in
         try partialExerciseType.insertAndFetch(db, as: ExerciseType.self)
       }
-
-      return exerciseType.id
+      return insertedExerciseType
     } catch {
       print("Error inserting exercise type: \(error)")
       return nil
@@ -544,21 +519,14 @@ class DatabaseHelper {
     }
   }
 
-  func fetchAllExerciseTypes() -> [ExerciseType] {
-    return fetchExerciseTypes()  // Same implementation in this case
-  }
-
-  func updateExerciseType(id: Int64, name: String, type: String) -> Bool {
+  func updateExerciseType(_ exerciseType: ExerciseType) -> Bool {
     do {
       try dbQueue.write { db in
-        if let exerciseType = try ExerciseType.fetchOne(db, key: id) {
-          var updatedExerciseType = exerciseType
-          updatedExerciseType.name = name
-          updatedExerciseType.type = type
-          try updatedExerciseType.update(db)
-          return true
-        }
-        return false
+        // if var existingExerciseType = try ExerciseType.fetchOne(db, key: exerciseType.id) {
+        try exerciseType.update(db)
+        return true
+        // }
+        // return false
       }
     } catch {
       print("Error updating exercise type: \(error)")
@@ -624,7 +592,7 @@ class DatabaseHelper {
     do {
       return try dbQueue.read { db in
         let request = """
-          SELECT c.id, c.name
+          SELECT *
           FROM categories c
           INNER JOIN exercise_type_categories etc ON c.id = etc.category_id
           WHERE etc.exercise_type_id = ?
@@ -643,7 +611,7 @@ class DatabaseHelper {
     do {
       return try dbQueue.read { db in
         let request = """
-          SELECT et.id, et.name, et.type
+          SELECT *
           FROM exercise_types et
           INNER JOIN exercise_type_categories etc ON et.id = etc.exercise_type_id
           WHERE etc.category_id = ?
@@ -754,24 +722,27 @@ class DatabaseHelper {
             return nil
           }()
 
-          let partialEntry = PartialFitnessEntry(
-            exerciseName: exerciseName,
-            exerciseType: exerciseType,
-            duration: Int32(duration),
-            date: date,
-            setId: Int64(setId),
-            reps: Int32(reps),
-            distance: distance,
-            distanceUnit: distanceUnit,
-            weight: weight,
-            weightUnit: weightUnit,
-            description: description
-          )
+          if let exerciseTypeId = try ExerciseType.filter(Column("name") == exerciseName).fetchOne(
+            db)?.id
+          {
 
-          do {
-            try partialEntry.insert(db)
-          } catch {
-            return false
+            let partialEntry = PartialFitnessEntry(
+              duration: Int32(duration),
+              date: date,
+              setId: Int64(setId),
+              reps: Int32(reps),
+              distance: distance,
+              distanceUnit: distanceUnit,
+              weight: weight,
+              weightUnit: weightUnit,
+              description: description,
+              exerciseTypeId: exerciseTypeId
+            )
+            do {
+              try partialEntry.insert(db)
+            } catch {
+              return false
+            }
           }
         }
         return true
