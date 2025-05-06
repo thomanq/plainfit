@@ -64,17 +64,17 @@ struct CategoryPicker: View {
             }
           }
         }
-      }.sheet(
+      }
+      .sheet(
         item: $selectedCategory,
         onDismiss: {
           selectedCategory = nil
         }
       ) { category in
         CategorySheet(
-          categoryName: category.name,
-          onSave: { updatedName in
-            _ = DatabaseHelper.shared.updateCategory(
-              id: category.id, name: updatedName)
+          category: category,
+          onSave: { updatedCategory in
+            _ = DatabaseHelper.shared.updateCategory(updatedCategory)
             categories = DatabaseHelper.shared.fetchCategories()
             selectedCategory = nil
           }
@@ -94,7 +94,7 @@ struct CategoryPicker: View {
       .navigationBarTitleDisplayMode(.inline)
       .onAppear {
         categories = DatabaseHelper.shared.fetchCategories()
-        exerciseTypes = DatabaseHelper.shared.fetchAllExerciseTypes()
+        exerciseTypes = DatabaseHelper.shared.fetchExerciseTypes()
       }
       .sheet(isPresented: $showingAddSheet) {
         AddExerciseTypeSheet()

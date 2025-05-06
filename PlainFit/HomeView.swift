@@ -22,10 +22,6 @@ private enum ImportType {
 }
 
 struct HomeView: View {
-  @State private var exerciseName: String = ""
-  @State private var duration: String = ""
-  @State private var sets: String = ""
-  @State private var reps: String = ""
   @State private var fitnessEntries: [FitnessEntry] = []
   @State private var currentDate: Date = Date()
   @State private var categories: [Category] = []
@@ -34,6 +30,7 @@ struct HomeView: View {
   @State private var newCategoryName = ""
   @State private var showCategoryPicker: Bool = false
   @State private var showEditExerciseSet: Bool = false
+  @State private var editExerciseType: ExerciseType = ExerciseType(id: 0, name: "", type: "")
   @State private var editExerciseSetId: Int64 = 0
   @State private var showingCalendar = false
   @State private var showingSettings = false
@@ -170,14 +167,15 @@ struct HomeView: View {
                   let hasWeight = entries.contains { $0.weight != nil }
 
                   VStack(spacing: 0) {
-
-                    if let firstEntry = entries.first {
-                      Text(firstEntry.exerciseName)
+                    if let firstEntry = entries.first,
+                      let exerciseTypeBySetId = DatabaseHelper.shared.fetchExerciseTypeBySetId(
+                        setId: firstEntry.setId)
+                    {
+                      Text(exerciseTypeBySetId.name)
                         .font(.headline)
                         .padding(.bottom, 16)
                         .frame(maxWidth: .infinity, alignment: .leading)
                     }
-                    // Header row
                     HStack {
                       Text("#")
                         .font(.system(.subheadline, design: .rounded, weight: .medium))
@@ -263,6 +261,11 @@ struct HomeView: View {
               .swipeActions(edge: .leading, allowsFullSwipe: true) {
 
                 Button(action: {
+                  if let exerciseTypeBySetId = DatabaseHelper.shared.fetchExerciseTypeBySetId(
+                    setId: setId)
+                  {
+                    editExerciseType = exerciseTypeBySetId
+                  }
                   editExerciseSetId = setId
                   showEditExerciseSet = true
                 }) {
@@ -277,7 +280,7 @@ struct HomeView: View {
         }
         NavigationLink(
           destination: AddExerciseEntryView(
-            exerciseType: nil,
+            exerciseType: editExerciseType,
             selectedDate: currentDate,
             showCategoryPicker: $showCategoryPicker,
             showEditExerciseSet: $showEditExerciseSet,

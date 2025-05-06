@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		E23245322DC94C34008A1554 /* icons.txt in Resources */ = {isa = PBXBuildFile; fileRef = E23245312DC94C34008A1554 /* icons.txt */; };
 		E27491272DC3CBB500E398AC /* exercises.json in Resources */ = {isa = PBXBuildFile; fileRef = E27491262DC3CBB500E398AC /* exercises.json */; };
 		E294F3A02DC2CA3B0081480B /* LICENSE in Resources */ = {isa = PBXBuildFile; fileRef = E294F39F2DC2CA3B0081480B /* LICENSE */; };
 		E2A221682DC75EF700F59021 /* GRDB in Frameworks */ = {isa = PBXBuildFile; productRef = E2A221672DC75EF700F59021 /* GRDB */; };
@@ -30,6 +31,7 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
+		E23245312DC94C34008A1554 /* icons.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = icons.txt; sourceTree = "<group>"; };
 		E27491262DC3CBB500E398AC /* exercises.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = exercises.json; sourceTree = "<group>"; };
 		E294F39F2DC2CA3B0081480B /* LICENSE */ = {isa = PBXFileReference; lastKnownFileType = text; path = LICENSE; sourceTree = "<group>"; };
 		E2B16C742DBE8DEA00722A4C /* PlainFit.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = PlainFit.app; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -84,6 +86,7 @@
 		E2B16C6B2DBE8DEA00722A4C = {
 			isa = PBXGroup;
 			children = (
+				E23245312DC94C34008A1554 /* icons.txt */,
 				E27491262DC3CBB500E398AC /* exercises.json */,
 				E294F39F2DC2CA3B0081480B /* LICENSE */,
 				E2B16C762DBE8DEA00722A4C /* PlainFit */,
@@ -227,6 +230,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				E23245322DC94C34008A1554 /* icons.txt in Resources */,
 				E27491272DC3CBB500E398AC /* exercises.json in Resources */,
 				E294F3A02DC2CA3B0081480B /* LICENSE in Resources */,
 			);
