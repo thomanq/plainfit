@@ -29,7 +29,6 @@ struct ExercisesData: Codable {
   let tutorial: [[FieldName: FieldValue]]
 }
 
-// Partial Category for insertion
 struct PartialCategory: Encodable, PersistableRecord {
   var name: String
   var iconName: String
@@ -55,7 +54,6 @@ struct Category: Identifiable, Hashable, Codable, PersistableRecord, FetchableRe
 
   static let databaseTableName = "categories"
 
-  // Hashable conformance
   func hash(into hasher: inout Hasher) {
     hasher.combine(id)
     hasher.combine(name)
@@ -70,17 +68,14 @@ struct Category: Identifiable, Hashable, Codable, PersistableRecord, FetchableRe
 
 }
 
-// Partial ExerciseType for insertion
 struct PartialExerciseType: Encodable, PersistableRecord {
   var name: String
   var type: String
   var iconName: String?
   var iconColor: String?
 
-  // Define table name explicitly
   static let databaseTableName = "exercise_types"
 
-  // Setup table definition
   static func defineTable(_ db: Database) throws {
     try db.create(table: databaseTableName, ifNotExists: true) { t in
       t.autoIncrementedPrimaryKey("id")
@@ -99,10 +94,8 @@ struct ExerciseType: Identifiable, Hashable, Codable, PersistableRecord, Fetchab
   var iconName: String?
   var iconColor: String?
 
-  // Add the table name to match PartialExerciseType
   static let databaseTableName = "exercise_types"
 
-  // Hashable conformance
   func hash(into hasher: inout Hasher) {
     hasher.combine(id)
     hasher.combine(name)
@@ -117,7 +110,6 @@ struct ExerciseType: Identifiable, Hashable, Codable, PersistableRecord, Fetchab
   }
 }
 
-// Partial FitnessEntry for insertion
 struct PartialFitnessEntry: Encodable, PersistableRecord {
   let duration: Int32
   let date: Date
@@ -210,7 +202,6 @@ struct ExerciseTypeCategory: Codable, FetchableRecord, PersistableRecord {
 
   static let databaseTableName = "exercise_type_categories"
 
-  // Setup table definition
   static func defineTable(_ db: Database) throws {
     try db.create(table: databaseTableName, ifNotExists: true) { t in
       t.column("exercise_type_id", .integer).notNull().references(
@@ -231,7 +222,6 @@ class DatabaseHelper {
 
   private func setupDatabase() {
     do {
-      // Get database path in documents directory
       let databaseURL = try FileManager.default.url(
         for: .documentDirectory,
         in: .userDomainMask,
@@ -239,10 +229,8 @@ class DatabaseHelper {
         create: true
       ).appendingPathComponent("plainfit.sqlite")
 
-      // Open database connection
       dbQueue = try DatabaseQueue(path: databaseURL.path)
 
-      // Create the database schema
       try dbQueue.write { db in
         try PartialCategory.defineTable(db)
         try PartialExerciseType.defineTable(db)
@@ -250,7 +238,6 @@ class DatabaseHelper {
         try ExerciseTypeCategory.defineTable(db)
       }
 
-      // Populate with initial data if needed
       populateInitialData()
 
     } catch {
@@ -260,7 +247,6 @@ class DatabaseHelper {
 
   private func populateInitialData() {
     do {
-      // Check if categories exist
       let categoriesExist = try dbQueue.read { db in
         try Category.fetchCount(db) > 0
       }
@@ -268,7 +254,6 @@ class DatabaseHelper {
       if !categoriesExist, let exercisesData = loadExercisesFromJSON() {
         try dbQueue.write { db in
           for (categoryName, categoryDetails) in exercisesData.categories {
-            // Insert category
             let partialCategory = PartialCategory(
               name: categoryName,
               iconName: categoryDetails.icon.name,
@@ -276,7 +261,6 @@ class DatabaseHelper {
             )
             let category = try partialCategory.insertAndFetch(db, as: Category.self)
 
-            // Insert exercise types and link to category
             for (exerciseName, attributes) in categoryDetails.exercises {
               let partialExerciseType = PartialExerciseType(
                 name: exerciseName,
@@ -442,7 +426,7 @@ class DatabaseHelper {
 
   func insertCategory(_ partialCategory: PartialCategory) -> Category? {
     do {
-      var category = try dbQueue.write { db in
+      let category = try dbQueue.write { db in
         try partialCategory.insertAndFetch(db, as: Category.self)
       }
       return category
@@ -467,12 +451,9 @@ class DatabaseHelper {
 
   func updateCategory(_ category: Category) -> Bool {
     do {
-      try dbQueue.write { db in
-        // if var existingCategory = try Category.fetchOne(db, key: category.id) {
+      _ = try dbQueue.write { db in
         try category.update(db)
         return true
-        // }
-        // return false
       }
     } catch {
       print("Error updating category: \(error)")
@@ -483,7 +464,7 @@ class DatabaseHelper {
 
   func deleteCategory(id: Int64) -> Bool {
     do {
-      try dbQueue.write { db in
+      _ = try dbQueue.write { db in
         return try Category.deleteOne(db, key: id)
       }
     } catch {
@@ -496,7 +477,7 @@ class DatabaseHelper {
   func insertExerciseType(_ partialExerciseType: PartialExerciseType) -> ExerciseType? {
     do {
 
-      var insertedExerciseType = try dbQueue.write { db in
+      let insertedExerciseType = try dbQueue.write { db in
         try partialExerciseType.insertAndFetch(db, as: ExerciseType.self)
       }
       return insertedExerciseType
@@ -521,12 +502,9 @@ class DatabaseHelper {
 
   func updateExerciseType(_ exerciseType: ExerciseType) -> Bool {
     do {
-      try dbQueue.write { db in
-        // if var existingExerciseType = try ExerciseType.fetchOne(db, key: exerciseType.id) {
+      _ = try dbQueue.write { db in
         try exerciseType.update(db)
         return true
-        // }
-        // return false
       }
     } catch {
       print("Error updating exercise type: \(error)")
@@ -537,7 +515,7 @@ class DatabaseHelper {
 
   func deleteExerciseType(id: Int64) -> Bool {
     do {
-      try dbQueue.write { db in
+      _ = try dbQueue.write { db in
         return try ExerciseType.deleteOne(db, key: id)
       }
     } catch {
@@ -554,7 +532,7 @@ class DatabaseHelper {
         category_id: categoryId
       )
 
-      try dbQueue.write { db in
+      _ = try dbQueue.write { db in
         try link.insert(db)
       }
       return true
@@ -566,14 +544,12 @@ class DatabaseHelper {
 
   func updateExerciseTypeCategory(exerciseTypeId: Int64, categoryId: Int64) -> Bool {
     do {
-      try dbQueue.write { db in
-        // Delete existing links
+      _ = try dbQueue.write { db in
         _ =
           try ExerciseTypeCategory
           .filter(Column("exercise_type_id") == exerciseTypeId)
           .deleteAll(db)
 
-        // Add new link
         let link = ExerciseTypeCategory(
           exercise_type_id: exerciseTypeId,
           category_id: categoryId
@@ -663,7 +639,7 @@ class DatabaseHelper {
         return false
       }
 
-      try dbQueue.write { db in
+      _ = try dbQueue.write { db in
         try FitnessEntry.deleteAll(db)
 
         for row in dataFrame.rows {
@@ -671,7 +647,6 @@ class DatabaseHelper {
             let setId = row["setId"] as? Int,
             let reps = row["reps"] as? Int,
             let exerciseName = row["exerciseName"] as? String,
-            let exerciseType = row["exerciseType"] as? String,
             let dateString = row["date"] as? String
           else {
             return false

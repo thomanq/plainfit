@@ -110,7 +110,7 @@ struct HomeView: View {
   }
 
   var body: some View {
-    NavigationView {
+    NavigationStack {
       ZStack {
 
         VStack(spacing: 16) {
@@ -278,34 +278,29 @@ struct HomeView: View {
           }
           .listStyle(PlainListStyle())
         }
-        NavigationLink(
-          destination: AddExerciseEntryView(
+        .navigationDestination(isPresented: $showEditExerciseSet) {
+          AddExerciseEntryView(
             exerciseType: editExerciseType,
             selectedDate: currentDate,
             showCategoryPicker: $showCategoryPicker,
             showEditExerciseSet: $showEditExerciseSet,
-            setId: editExerciseSetId),
-          isActive: $showEditExerciseSet
-        ) {
-          EmptyView()
+            setId: editExerciseSetId)
         }
         VStack {
           Spacer()
-          NavigationLink(
-            destination: CategoryPicker(
-              selectedDate: currentDate, showCategoryPicker: $showCategoryPicker,
-              showEditExerciseSet: $showEditExerciseSet, ),
-            isActive: $showCategoryPicker
-          ) {
-            Image(systemName: "plus.circle.fill")
-              .font(.system(size: 50))
-              .foregroundColor(.blue)
-              .background(Color.white.clipShape(Circle()))
-              .onTapGesture {
-                showCategoryPicker = true
-              }
-          }
-          .padding(.bottom, 16)
+          Image(systemName: "plus.circle.fill")
+            .font(.system(size: 50))
+            .foregroundColor(.blue)
+            .background(Color.white.clipShape(Circle()))
+            .onTapGesture {
+              showCategoryPicker = true
+            }
+            .padding(.bottom, 16)
+        }
+        .navigationDestination(isPresented: $showCategoryPicker) {
+          CategoryPicker(
+            selectedDate: currentDate, showCategoryPicker: $showCategoryPicker,
+            showEditExerciseSet: $showEditExerciseSet, )
         }
       }
       .toolbar {

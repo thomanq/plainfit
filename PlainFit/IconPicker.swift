@@ -64,7 +64,6 @@ struct IconPicker: View {
           selectedColor = tempSelectedColor.toHex()
           dismiss()
         }
-        .disabled(tempSelectedIcon == nil)
       )
       .onAppear {
         loadIcons()
@@ -74,7 +73,7 @@ struct IconPicker: View {
 
   private func loadIcons() {
     if let url = Bundle.main.url(forResource: "icons", withExtension: "txt"),
-      let content = try? String(contentsOf: url)
+      let content = try? String(contentsOf: url, encoding: .utf8)
     {
       icons = content.components(separatedBy: "\n").filter { !$0.isEmpty }
     }
