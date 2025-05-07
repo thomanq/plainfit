@@ -141,6 +141,19 @@ struct PartialFitnessEntry: Encodable, PersistableRecord {
   }
 }
 
+struct FitnessActivity: Hashable {
+  let category: Category
+  let exerciseType: ExerciseType
+    
+    func hash(into hasher: inout Hasher) {
+        hasher.combine(exerciseType.id)
+    }
+}
+typealias DayNumber = Int
+struct FitnessActivitySummary {
+  let activity: [DayNumber: Set<FitnessActivity>]
+}
+
 struct FitnessEntry: Identifiable, Codable, FetchableRecord, PersistableRecord {
   static let databaseTableName = "fitness_entries"
   static let dateFormatter: DateFormatter = {
@@ -749,5 +762,55 @@ class DatabaseHelper {
       print("Error restoring database: \(error)")
       return false
     }
+  }
+
+  func getFitnessEntriesForMonth(date: Date) -> [FitnessEntry] {
+    do {
+      let calendar = Calendar.current
+      guard
+        let startOfMonth = calendar.date(
+          from: calendar.dateComponents([.year, .month], from: date)),
+        let startNextMonth = calendar.date(byAdding: .month, value: 1, to: startOfMonth)
+      else {
+        return []
+      }
+
+      return try dbQueue.read { db in
+        let request =
+          FitnessEntry
+          .filter(Column("date") >= startOfMonth)
+          .filter(Column("date") < startNextMonth)
+          .order(Column("date").asc)
+
+        return try request.fetchAll(db)
+      }
+    } catch {
+      print("Error fetching entries for month: \(error)")
+      return []
+    }
+  }
+
+  func getFitnessActivityForMonth(date: Date) -> FitnessActivitySummary {
+    let entries = getFitnessEntriesForMonth(date: date)
+    var activityByDay: [DayNumber: Set<FitnessActivity>] = [:]
+
+    let calendar = Calendar.current
+
+    for entry in entries {
+        let day = calendar.component(.day, from: entry.date)
+
+        if let exerciseType = fetchExerciseTypeBySetId(setId: entry.setId),
+           let category = getCategoriesForExerciseType(exerciseTypeId: exerciseType.id).first {
+            let activity = FitnessActivity(category: category, exerciseType: exerciseType)
+
+            if activityByDay[day] != nil {
+                activityByDay[day]?.insert(activity)
+            } else {
+                activityByDay[day] = Set([activity])
+            }
+        }
+    }
+
+    return FitnessActivitySummary(activity: activityByDay)
   }
 }
