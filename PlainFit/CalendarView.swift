@@ -95,9 +95,10 @@ struct MonthView: View {
   let month: Date
   @Binding var selectedDate: Date
   let weekStart: WeekStart
+  @State private var activitySummary: FitnessActivitySummary? = nil
 
   private let calendar = Calendar.current
-  private let cellWidth: CGFloat = 40
+  private let cellWidth: CGFloat = 50
   private let monthFormatter: DateFormatter = {
     let formatter = DateFormatter()
     formatter.dateFormat = "MMMM yyyy"
@@ -145,12 +146,12 @@ struct MonthView: View {
       Text(monthFormatter.string(from: month))
         .font(.title2)
         .bold()
-        .padding(.vertical, 8)
+        .padding(.bottom)
 
       HStack {
         ForEach(CalendarView(selectedDate: $selectedDate).weekDays(), id: \.self) { day in
           Text(day)
-            .frame(width: cellWidth)
+            .frame(width: cellWidth - 10)
         }
       }
       .padding(.horizontal)
@@ -159,13 +160,16 @@ struct MonthView: View {
         ForEach(weeksForMonth(date: month), id: \.self) { week in
           HStack {
             ForEach(week, id: \.self) { date in
+              let dayNumber = Calendar.current.component(.day, from: date)
+              let activities = activitySummary?.activity[dayNumber] ?? Set<FitnessActivity>()
               DayCell(
                 date: date,
                 isSelected: calendar.isDate(date, inSameDayAs: selectedDate),
                 isMonday: calendar.component(.weekday, from: date) == 2,
                 isCurrentMonth: calendar.isDate(
                   date, equalTo: month, toGranularity: .month),
-                cellWidth: cellWidth
+                cellWidth: cellWidth,
+                activities: activities
               )
               .onTapGesture {
                 selectedDate = date
@@ -174,7 +178,10 @@ struct MonthView: View {
           }
         }
       }
-      .padding()
+      .padding(.bottom)
+    }
+    .onAppear {
+      activitySummary = DatabaseHelper.shared.getFitnessActivityForMonth(date: month)
     }
   }
 }
@@ -185,6 +192,7 @@ struct DayCell: View {
   let isMonday: Bool
   let isCurrentMonth: Bool
   let cellWidth: CGFloat
+  let activities: Set<FitnessActivity>
 
   private let calendar = Calendar.current
   private let dayFormatter: DateFormatter = {
@@ -194,14 +202,28 @@ struct DayCell: View {
   }()
 
   var body: some View {
-    Text(dayFormatter.string(from: date))
-      .frame(width: cellWidth, height: cellWidth - 10)
-      .foregroundColor(isCurrentMonth ? .primary : .gray.opacity(0.5))
-      .clipShape(Circle())
-      .overlay(
-        Circle()
-          .stroke(isSelected && isCurrentMonth ? Color.blue : Color.clear, lineWidth: 3)
-      )
-      .padding(.vertical, 4)
+    VStack(spacing: 4) {
+      Text(dayFormatter.string(from: date))
+        .frame(width: cellWidth, height: cellWidth - 10)
+        .foregroundColor(isCurrentMonth ? .primary : .gray.opacity(0.5))
+        .clipShape(Circle())
+        .overlay(
+          Circle()
+            .stroke(isSelected && isCurrentMonth ? Color.blue : Color.clear, lineWidth: 3)
+        )
+        .padding(.vertical, 4)
+        HStack {
+            if isCurrentMonth {
+                ForEach(Array(activities), id: \.self) { activity in
+                    Image(systemName: activity.exerciseType.iconName ?? activity.category.iconName)
+                        .resizable()
+                        .scaledToFit()
+                        .frame(width: 14, height: 14)
+                        .foregroundColor(Color(hex: activity.exerciseType.iconColor ?? activity.category.iconColor))
+                        .padding(.all, 0)
+                }
+            }
+        }
+    }
   }
 }
