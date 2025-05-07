@@ -19,6 +19,8 @@ struct SettingsView: View {
   @Environment(\.dismiss) var dismiss
   @AppStorage("weekStart") private var weekStart = WeekStart.sunday
   @AppStorage("unitSystem") private var unitSystem = UnitSystem.imperial
+  @State private var isVersionPresented = false
+  @State private var isLicensePresented = false
 
   private let licenseText: String = {
     if let licensePath = Bundle.main.path(forResource: "LICENSE", ofType: ""),
@@ -30,49 +32,54 @@ struct SettingsView: View {
   }()
 
   var body: some View {
-    List {
-      Section(header: Text("App Settings")) {
-        Picker("Week Starts On", selection: $weekStart) {
-          ForEach(WeekStart.allCases, id: \.self) { day in
-            Text(day.rawValue).tag(day)
+    NavigationStack {
+      List {
+        Section(header: Text("App Settings")) {
+          Picker("Week Starts On", selection: $weekStart) {
+            ForEach(WeekStart.allCases, id: \.self) { day in
+              Text(day.rawValue).tag(day)
+            }
+          }
+
+          Picker("Unit System", selection: $unitSystem) {
+            ForEach(UnitSystem.allCases, id: \.self) { system in
+              Text(system.rawValue).tag(system)
+            }
           }
         }
 
-        Picker("Unit System", selection: $unitSystem) {
-          ForEach(UnitSystem.allCases, id: \.self) { system in
-            Text(system.rawValue).tag(system)
+        Section(header: Text("About")) {
+          Button(action: { isVersionPresented = true }) {
+            Label("Version", systemImage: "info.circle")
           }
-        }
-      }
+          .navigationDestination(isPresented: $isVersionPresented) {
+            VStack {
+              Text("Version 1.0")
+              Link(
+                "https://github.com/thomanq/plainfit",
+                destination: URL(string: "https://github.com/thomanq/plainfit")!)
+            }
+          }
 
-      Section(header: Text("About")) {
-        NavigationLink(
-          destination: VStack {
-            Text("Version 1.0")
-            Link(
-              "https://github.com/thomanq/plainfit",
-              destination: URL(string: "https://github.com/thomanq/plainfit")!)
+          Button(action: { isLicensePresented = true }) {
+            Label("View License", systemImage: "doc.text")
           }
-        ) {
-          Label("Version", systemImage: "info.circle")
-        }
-        NavigationLink(
-          destination: ScrollView {
-            Text(licenseText)
-              .padding()
+          .navigationDestination(isPresented: $isLicensePresented) {
+            ScrollView {
+              Text(licenseText)
+                .padding()
+            }
+            .navigationTitle("License")
+            .navigationBarTitleDisplayMode(.inline)
           }
-          .navigationTitle("License")
-          .navigationBarTitleDisplayMode(.inline)
-        ) {
-          Label("View License", systemImage: "doc.text")
         }
       }
-    }
-    .navigationTitle("Settings")
-    .toolbar {
-      ToolbarItem(placement: .topBarTrailing) {
-        Button("Done") {
-          dismiss()
+      .navigationTitle("Settings")
+      .toolbar {
+        ToolbarItem(placement: .topBarTrailing) {
+          Button("Done") {
+            dismiss()
+          }
         }
       }
     }
