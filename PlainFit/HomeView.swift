@@ -22,6 +22,8 @@ private enum ImportType {
 }
 
 struct HomeView: View {
+  @Environment(\.colorScheme) var colorScheme
+
   @State private var fitnessEntries: [FitnessEntry] = []
   @State private var currentDate: Date = Date()
   @State private var categories: [Category] = []
@@ -204,7 +206,7 @@ struct HomeView: View {
                     }
                     .padding(.vertical, 10)
                     .padding(.horizontal, 8)
-                    .background(Color.gray.opacity(0.1))
+                    .background(colorScheme == .dark ? Color.white.opacity(0.15): Color.gray.opacity(0.1))
                     .clipShape(RoundedRectangle(cornerRadius: 8))
 
                     // Data rows
@@ -244,13 +246,14 @@ struct HomeView: View {
                             .padding(.top, 4)
                             .padding(.leading, 28)
                         }
+                        Divider()
                       }
                       .padding(.vertical, 8)
                     }
                   }
                   .padding(.horizontal)
                 }
-              }
+              }.listRowSeparator(.hidden)
               .swipeActions(edge: .trailing, allowsFullSwipe: true) {
                 Button(role: .destructive) {
                   deleteSet(setId: setId)

@@ -156,12 +156,6 @@ struct AddExerciseTypeSheet: View {
                   }
                 }
               }
-              newName = ""
-              newType = ""
-              category = nil
-              selectedTypes.removeAll()
-              selectedIcon = "circle.fill"
-              selectedColor = "#000000FF"
               dismiss()
             }
           }

@@ -253,8 +253,8 @@ struct AddExerciseEntryView: View {
     let ms = Int32(milliseconds) ?? 0
     let totalDurationMs = hoursMs + minutesMs + secondsMs + ms
 
-    let distanceValue = Float(distance)
-    let weightValue = Float(weight)
+    let distanceValue = Float(distance.replacingOccurrences(of: ",", with: "."))
+    let weightValue = Float(weight.replacingOccurrences(of: ",", with: "."))
 
     let newExercise = FitnessEntry(
         id: nextId,
@@ -338,9 +338,9 @@ struct AddExerciseEntryView: View {
         date: exerciseDate,
         setId: existingExercise.setId,
         reps: Int32(reps) ?? 0,
-        distance: Float(distance),
+        distance: Float(distance.replacingOccurrences(of: ",", with: ".")),
         distanceUnit: !distance.isEmpty ? distanceUnit : nil,
-        weight: Float(weight),
+        weight: Float(weight.replacingOccurrences(of: ",", with: ".")),
         weightUnit: !weight.isEmpty ? weightUnit : nil,
         description: !description.isEmpty ? description: nil,
         exerciseTypeId: exerciseType.id

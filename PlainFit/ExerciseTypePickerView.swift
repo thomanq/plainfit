@@ -7,7 +7,8 @@ struct ExerciseTypePickerView: View {
   @State private var selectedDate: Date
   @State private var exerciseTypes: [ExerciseType] = []
   @State private var showingAddSheet = false
-  @State private var selectedExerciseType: ExerciseType?
+  @State private var showingAddEntry = false
+  @State private var selectedExerciseType: ExerciseType
   @State private var searchText = ""
   @State private var showingDeleteConfirmation = false
   @State private var exerciseTypeToDelete: ExerciseType?
@@ -20,6 +21,7 @@ struct ExerciseTypePickerView: View {
     self.selectedDate = selectedDate
     _showCategoryPicker = showCategoryPicker
     _showEditExerciseSet = showEditExerciseSet
+    self.selectedExerciseType = ExerciseType(id: 0, name: "", type: "")
   }
 
   var filteredExerciseTypes: [ExerciseType] {
@@ -37,16 +39,13 @@ struct ExerciseTypePickerView: View {
       List {
         ForEach(filteredExerciseTypes, id: \.self) { exerciseType in
           HStack {
-            NavigationLink(
-              destination: AddExerciseEntryView(
-                exerciseType: exerciseType,
-                selectedDate: selectedDate,
-                showCategoryPicker: $showCategoryPicker,
-                showEditExerciseSet: $showEditExerciseSet
-              )
-            ) {
-              Text(exerciseType.name)
-            }
+            Text(exerciseType.name)
+              .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
+              .contentShape(Rectangle())
+              .onTapGesture {
+                selectedExerciseType = exerciseType
+                showingAddEntry = true
+              }
           }
           .swipeActions(edge: .leading, allowsFullSwipe: true) {
             Button(action: {
@@ -59,6 +58,14 @@ struct ExerciseTypePickerView: View {
           }
         }
         .onDelete(perform: deleteExerciseType)
+      }
+      .navigationDestination(isPresented: $showingAddEntry) {
+        AddExerciseEntryView(
+          exerciseType: selectedExerciseType,
+          selectedDate: selectedDate,
+          showCategoryPicker: $showCategoryPicker,
+          showEditExerciseSet: $showEditExerciseSet
+        )
       }
       .navigationTitle(category.name)
       .navigationBarTitleDisplayMode(.inline)
@@ -73,15 +80,14 @@ struct ExerciseTypePickerView: View {
         exerciseTypes = DatabaseHelper.shared.getExerciseTypesForCategory(categoryId: category.id)
       }
       .sheet(
-        item: $selectedExerciseType,
+        isPresented: $showingAddSheet,
         onDismiss: {
           exerciseTypes = DatabaseHelper.shared.getExerciseTypesForCategory(categoryId: category.id)
-          selectedExerciseType = nil
         }
-      ) { exerciseType in
+      ) {
         AddExerciseTypeSheet(
           category: category,
-          exerciseTypeToEdit: exerciseType)
+          exerciseTypeToEdit: selectedExerciseType)
       }
       .confirmationDialog(
         "Are you sure you want to delete the '\(exerciseTypeToDelete?.name ?? "???")' exercise type?",
