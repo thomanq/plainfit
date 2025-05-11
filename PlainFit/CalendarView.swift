@@ -211,19 +211,37 @@ struct DayCell: View {
           Circle()
             .stroke(isSelected && isCurrentMonth ? Color.blue : Color.clear, lineWidth: 3)
         )
-        .padding(.vertical, 4)
-        HStack {
-            if isCurrentMonth {
-                ForEach(Array(activities), id: \.self) { activity in
-                    Image(systemName: activity.exerciseType.iconName ?? activity.category.iconName)
-                        .resizable()
-                        .scaledToFit()
-                        .frame(width: 14, height: 14)
-                        .foregroundColor(Color(hex: activity.exerciseType.iconColor ?? activity.category.iconColor))
-                        .padding(.all, 0)
-                }
-            }
+        .offset(y: -10)
+
+      Spacer(minLength: 0)
+
+      if isCurrentMonth {
+
+        let activityChunks = Array(activities).chunked(into: 2)
+        ForEach(activityChunks, id: \.self) { chunk in
+          HStack(spacing: 0) {
+            ForEach(chunk, id: \.self) { activity in
+              Image(systemName: activity.exerciseType.iconName ?? activity.category.iconName)
+                .resizable()
+                .scaledToFit()
+                .frame(width: 16, height: 16)
+                .foregroundColor(
+                  Color(hex: activity.exerciseType.iconColor ?? activity.category.iconColor)
+                )
+            }.offset(y: -10)
+              .frame(maxWidth: .infinity, alignment: .leading)
+              .padding(.leading, 6)
+          }
         }
+      }
+    }.frame(width: cellWidth)
+  }
+}
+
+extension Array {
+  func chunked(into size: Int) -> [[Element]] {
+    return stride(from: 0, to: count, by: size).map {
+      Array(self[$0..<Swift.min($0 + size, count)])
     }
   }
 }
