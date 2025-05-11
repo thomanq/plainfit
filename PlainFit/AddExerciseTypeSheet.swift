@@ -178,44 +178,46 @@ struct AddExerciseTypeSheet: View {
             }
           }
         }
-      }
-      .navigationTitle(exerciseTypeToEdit == nil ? "New Exercise Type" : "Edit Exercise Type")
-      .alert("Error", isPresented: $showError) {
-        Button("OK", role: .cancel) {
-          showError = false
+      }.scrollContentBackground(.hidden)
+        .background(Color("Background"))
+        .navigationTitle(exerciseTypeToEdit == nil ? "New Exercise Type" : "Edit Exercise Type")
+        .alert("Error", isPresented: $showError) {
+          Button("OK", role: .cancel) {
+            showError = false
+          }
+        } message: {
+          Text(errorMessage)
         }
-      } message: {
-        Text(errorMessage)
-      }
-      .navigationBarItems(
-        trailing: Button("Cancel") {
-          dismiss()
-        }
-      )
-      .sheet(isPresented: $showingNewCategorySheet) {
-        CategorySheet(
-          category: Category(
-            id: 0, name: newCategoryName, iconName: "circle.fill", iconColor: Color(.blue).toHex()),
-          onSave: { category in
-            let partialCategory = PartialCategory(
-              name: category.name,
-              iconName: category.iconName,
-              iconColor: category.iconColor
-            )
-            if DatabaseHelper.shared.insertCategory(partialCategory) != nil {
-              categories = DatabaseHelper.shared.fetchCategories()
-              newCategoryName = ""
-              showingNewCategorySheet = false
-            }
+        .navigationBarItems(
+          trailing: Button("Cancel") {
+            dismiss()
           }
         )
-      }
-      .sheet(isPresented: $isIconPickerPresented) {
-        IconPicker(selectedIcon: $selectedIcon, selectedColor: $selectedColor)
-      }
-      .onAppear {
-        categories = DatabaseHelper.shared.fetchCategories()
-      }
+        .sheet(isPresented: $showingNewCategorySheet) {
+          CategorySheet(
+            category: Category(
+              id: 0, name: newCategoryName, iconName: "circle.fill", iconColor: Color(.blue).toHex()
+            ),
+            onSave: { category in
+              let partialCategory = PartialCategory(
+                name: category.name,
+                iconName: category.iconName,
+                iconColor: category.iconColor
+              )
+              if DatabaseHelper.shared.insertCategory(partialCategory) != nil {
+                categories = DatabaseHelper.shared.fetchCategories()
+                newCategoryName = ""
+                showingNewCategorySheet = false
+              }
+            }
+          )
+        }
+        .sheet(isPresented: $isIconPickerPresented) {
+          IconPicker(selectedIcon: $selectedIcon, selectedColor: $selectedColor)
+        }
+        .onAppear {
+          categories = DatabaseHelper.shared.fetchCategories()
+        }
     }
   }
 }

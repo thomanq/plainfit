@@ -40,6 +40,7 @@ struct CategoryPicker: View {
         if searchText.isEmpty {
           ForEach(categories, id: \.self) { category in
             Text(category.name)
+              .listRowBackground(Color("Background"))
               .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
               .contentShape(Rectangle())
               .onTapGesture {
@@ -59,7 +60,7 @@ struct CategoryPicker: View {
           .onDelete(perform: deleteCategory)
         } else {
           ForEach(filteredExercises, id: \.self) { exerciseType in
-            Text(exerciseType.name)
+            Text(exerciseType.name).listRowBackground(Color("Background"))
               .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
               .contentShape(Rectangle())
               .onTapGesture {
@@ -82,89 +83,89 @@ struct CategoryPicker: View {
               }
           }.onDelete(perform: deleteExerciseType)
         }
-      }
-      .sheet(
-        isPresented: $showEditCategory,
-      ) {
-        CategorySheet(
-          category: selectedCategory,
-          onSave: { updatedCategory in
-            _ = DatabaseHelper.shared.updateCategory(updatedCategory)
-            categories = DatabaseHelper.shared.fetchCategories()
-            showEditCategory = false
-          }
-        )
-      }
-      .toolbar {
-        ToolbarItem(placement: .principal) {
-          Text(searchText.isEmpty ? "Categories" : "Filtered Exercises")
-            .font(.headline)
+      }.listStyle(PlainListStyle())
+        .sheet(
+          isPresented: $showEditCategory,
+        ) {
+          CategorySheet(
+            category: selectedCategory,
+            onSave: { updatedCategory in
+              _ = DatabaseHelper.shared.updateCategory(updatedCategory)
+              categories = DatabaseHelper.shared.fetchCategories()
+              showEditCategory = false
+            }
+          )
         }
-        ToolbarItem(placement: .topBarTrailing) {
-          Button(action: { showAddExerciseType = true }) {
-            Image(systemName: "plus")
+        .toolbar {
+          ToolbarItem(placement: .principal) {
+            Text(searchText.isEmpty ? "Categories" : "Filtered Exercises")
+              .font(.headline)
+          }
+          ToolbarItem(placement: .topBarTrailing) {
+            Button(action: { showAddExerciseType = true }) {
+              Image(systemName: "plus")
+            }
           }
         }
-      }
-      .navigationBarTitleDisplayMode(.inline)
-      .onAppear {
-        categories = DatabaseHelper.shared.fetchCategories()
-        exerciseTypes = DatabaseHelper.shared.fetchExerciseTypes()
-      }
-      .sheet(isPresented: $showAddExerciseType) {
-        AddExerciseTypeSheet()
-      }
-      .sheet(
-        isPresented: $showEditExerciseType,
-        onDismiss: {
+        .navigationBarTitleDisplayMode(.inline)
+        .onAppear {
+          categories = DatabaseHelper.shared.fetchCategories()
           exerciseTypes = DatabaseHelper.shared.fetchExerciseTypes()
         }
-      ) {
-        AddExerciseTypeSheet(
-          category: selectedCategory,
-          exerciseTypeToEdit: selectedExerciseType)
-      }
-      .confirmationDialog(
-        "Are you sure you want to delete the '\(categoryToDelete?.name ?? "???")' category?",
-        isPresented: $showCategoryDeleteConfirmation, titleVisibility: .visible
-      ) {
-        Button("Delete", role: .destructive) {
-          if let category = categoryToDelete {
-            _ = DatabaseHelper.shared.deleteCategory(id: category.id)
-            categories = DatabaseHelper.shared.fetchCategories()
-          }
+        .sheet(isPresented: $showAddExerciseType) {
+          AddExerciseTypeSheet()
         }
-        Button("Cancel", role: .cancel) {}
-      }
-      .confirmationDialog(
-        "Are you sure you want to delete the '\(categoryToDelete?.name ?? "???")' exercise type?",
-        isPresented: $showExerciseTypeDeleteConfirmation, titleVisibility: .visible
-      ) {
-        Button("Delete", role: .destructive) {
-          if let exerciseType = exerciseTypeToDelete {
-            _ = DatabaseHelper.shared.deleteExerciseType(id: exerciseType.id)
+        .sheet(
+          isPresented: $showEditExerciseType,
+          onDismiss: {
             exerciseTypes = DatabaseHelper.shared.fetchExerciseTypes()
           }
+        ) {
+          AddExerciseTypeSheet(
+            category: selectedCategory,
+            exerciseTypeToEdit: selectedExerciseType)
         }
-        Button("Cancel", role: .cancel) {}
+        .confirmationDialog(
+          "Are you sure you want to delete the '\(categoryToDelete?.name ?? "???")' category?",
+          isPresented: $showCategoryDeleteConfirmation, titleVisibility: .visible
+        ) {
+          Button("Delete", role: .destructive) {
+            if let category = categoryToDelete {
+              _ = DatabaseHelper.shared.deleteCategory(id: category.id)
+              categories = DatabaseHelper.shared.fetchCategories()
+            }
+          }
+          Button("Cancel", role: .cancel) {}
+        }
+        .confirmationDialog(
+          "Are you sure you want to delete the '\(categoryToDelete?.name ?? "???")' exercise type?",
+          isPresented: $showExerciseTypeDeleteConfirmation, titleVisibility: .visible
+        ) {
+          Button("Delete", role: .destructive) {
+            if let exerciseType = exerciseTypeToDelete {
+              _ = DatabaseHelper.shared.deleteExerciseType(id: exerciseType.id)
+              exerciseTypes = DatabaseHelper.shared.fetchExerciseTypes()
+            }
+          }
+          Button("Cancel", role: .cancel) {}
+        }
+    }.background(Color("Background"))
+      .navigationDestination(isPresented: $showExerciseTypePicker) {
+        ExerciseTypePickerView(
+          category: selectedCategory,
+          selectedDate: selectedDate,
+          showCategoryPicker: $showCategoryPicker,
+          showEditExerciseSet: $showEditExerciseSet
+        )
       }
-    }
-    .navigationDestination(isPresented: $showExerciseTypePicker) {
-      ExerciseTypePickerView(
-        category: selectedCategory,
-        selectedDate: selectedDate,
-        showCategoryPicker: $showCategoryPicker,
-        showEditExerciseSet: $showEditExerciseSet
-      )
-    }
-    .navigationDestination(isPresented: $showAddExerciseEntry) {
-      AddExerciseEntryView(
-        exerciseType: selectedExerciseType,
-        selectedDate: selectedDate,
-        showCategoryPicker: $showCategoryPicker,
-        showEditExerciseSet: $showEditExerciseSet
-      )
-    }
+      .navigationDestination(isPresented: $showAddExerciseEntry) {
+        AddExerciseEntryView(
+          exerciseType: selectedExerciseType,
+          selectedDate: selectedDate,
+          showCategoryPicker: $showCategoryPicker,
+          showEditExerciseSet: $showEditExerciseSet
+        )
+      }
   }
 
   private func deleteCategory(at offsets: IndexSet) {

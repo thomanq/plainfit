@@ -41,7 +41,7 @@ struct AddExerciseEntryView: View {
         minute: Calendar.current.component(.minute, from: Date()),
         second: Calendar.current.component(.second, from: Date()), of: selectedDate) ?? selectedDate
 
-      _exerciseDate = State(initialValue: selectedDateWithCurrentTime)
+    _exerciseDate = State(initialValue: selectedDateWithCurrentTime)
 
     if let setId = setId {
       _setId = State(initialValue: setId)
@@ -239,11 +239,13 @@ struct AddExerciseEntryView: View {
           }
         }
       }
-    }
-    .alert(isPresented: $showErrorModal) {
-      Alert(title: Text("Error"), message: Text(errorMessage), dismissButton: .default(Text("OK")))
-    }
-    .navigationTitle(showEditExerciseSet ? "Edit Exercise" : "Add Exercise")
+    }.scrollContentBackground(.hidden)
+      .background(Color("Background"))
+      .alert(isPresented: $showErrorModal) {
+        Alert(
+          title: Text("Error"), message: Text(errorMessage), dismissButton: .default(Text("OK")))
+      }
+      .navigationTitle(showEditExerciseSet ? "Edit Exercise" : "Add Exercise")
   }
 
   private func addExercise() {
@@ -257,24 +259,24 @@ struct AddExerciseEntryView: View {
     let weightValue = Float(weight.replacingOccurrences(of: ",", with: "."))
 
     let newExercise = FitnessEntry(
-        id: nextId,
-        duration: totalDurationMs,
-        date: exerciseDate,
-        setId: setId,
-        reps: Int32(reps) ?? 0,
-        distance: distanceValue,
-        distanceUnit: !distance.isEmpty ? distanceUnit : nil,
-        weight: weightValue,
-        weightUnit: !weight.isEmpty ? weightUnit : nil,
-        description: !description.isEmpty ? description : nil,
-        exerciseTypeId: exerciseType.id
+      id: nextId,
+      duration: totalDurationMs,
+      date: exerciseDate,
+      setId: setId,
+      reps: Int32(reps) ?? 0,
+      distance: distanceValue,
+      distanceUnit: !distance.isEmpty ? distanceUnit : nil,
+      weight: weightValue,
+      weightUnit: !weight.isEmpty ? weightUnit : nil,
+      description: !description.isEmpty ? description : nil,
+      exerciseTypeId: exerciseType.id
     )
     nextId += 1
 
     exercises.append(newExercise)
 
     clearFields()
-}
+  }
 
   private func saveExercise() {
     guard !exercises.isEmpty else { return }
@@ -282,24 +284,24 @@ struct AddExerciseEntryView: View {
     DatabaseHelper.shared.deleteEntriesBySetId(setId: setId)
 
     for exercise in exercises {
-        let partialEntry = PartialFitnessEntry(
-            duration: exercise.duration,
-            date: exercise.date,
-            setId: exercise.setId,
-            reps: exercise.reps,
-            distance: exercise.distance,
-            distanceUnit: exercise.distanceUnit,
-            weight: exercise.weight,
-            weightUnit: exercise.weightUnit,
-            description: exercise.description,
-            exerciseTypeId: exerciseType.id
-        )
-        _ = DatabaseHelper.shared.insertEntry(partialEntry)
+      let partialEntry = PartialFitnessEntry(
+        duration: exercise.duration,
+        date: exercise.date,
+        setId: exercise.setId,
+        reps: exercise.reps,
+        distance: exercise.distance,
+        distanceUnit: exercise.distanceUnit,
+        weight: exercise.weight,
+        weightUnit: exercise.weightUnit,
+        description: exercise.description,
+        exerciseTypeId: exerciseType.id
+      )
+      _ = DatabaseHelper.shared.insertEntry(partialEntry)
     }
 
     showCategoryPicker = false
     showEditExerciseSet = false
-}
+  }
 
   private func deleteExercise(at offsets: IndexSet) {
     exercises.remove(atOffsets: offsets)
@@ -342,7 +344,7 @@ struct AddExerciseEntryView: View {
         distanceUnit: !distance.isEmpty ? distanceUnit : nil,
         weight: Float(weight.replacingOccurrences(of: ",", with: ".")),
         weightUnit: !weight.isEmpty ? weightUnit : nil,
-        description: !description.isEmpty ? description: nil,
+        description: !description.isEmpty ? description : nil,
         exerciseTypeId: exerciseType.id
       )
     }

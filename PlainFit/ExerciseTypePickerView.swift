@@ -46,63 +46,65 @@ struct ExerciseTypePickerView: View {
                 selectedExerciseType = exerciseType
                 showingAddEntry = true
               }
-          }
-          .swipeActions(edge: .leading, allowsFullSwipe: true) {
-            Button(action: {
-              selectedExerciseType = exerciseType
-              showingAddSheet = true
-            }) {
-              Label("Edit", systemImage: "pencil")
+          }.listRowBackground(Color("Background"))
+            .swipeActions(edge: .leading, allowsFullSwipe: true) {
+              Button(action: {
+                selectedExerciseType = exerciseType
+                showingAddSheet = true
+              }) {
+                Label("Edit", systemImage: "pencil")
+              }
+              .tint(.blue)
             }
-            .tint(.blue)
-          }
         }
         .onDelete(perform: deleteExerciseType)
-      }
-      .navigationDestination(isPresented: $showingAddEntry) {
-        AddExerciseEntryView(
-          exerciseType: selectedExerciseType,
-          selectedDate: selectedDate,
-          showCategoryPicker: $showCategoryPicker,
-          showEditExerciseSet: $showEditExerciseSet
-        )
-      }
-      .navigationTitle(category.name)
-      .navigationBarTitleDisplayMode(.inline)
-      .toolbar {
-        ToolbarItemGroup(placement: .navigationBarTrailing) {
-          Button(action: { showingAddSheet = true }) {
-            Image(systemName: "plus")
+      }.listStyle(PlainListStyle())
+
+        .navigationDestination(isPresented: $showingAddEntry) {
+          AddExerciseEntryView(
+            exerciseType: selectedExerciseType,
+            selectedDate: selectedDate,
+            showCategoryPicker: $showCategoryPicker,
+            showEditExerciseSet: $showEditExerciseSet
+          )
+        }
+        .navigationTitle(category.name)
+        .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+          ToolbarItemGroup(placement: .navigationBarTrailing) {
+            Button(action: { showingAddSheet = true }) {
+              Image(systemName: "plus")
+            }
           }
         }
-      }
-      .onAppear {
-        exerciseTypes = DatabaseHelper.shared.getExerciseTypesForCategory(categoryId: category.id)
-      }
-      .sheet(
-        isPresented: $showingAddSheet,
-        onDismiss: {
+        .onAppear {
           exerciseTypes = DatabaseHelper.shared.getExerciseTypesForCategory(categoryId: category.id)
         }
-      ) {
-        AddExerciseTypeSheet(
-          category: category,
-          exerciseTypeToEdit: selectedExerciseType)
-      }
-      .confirmationDialog(
-        "Are you sure you want to delete the '\(exerciseTypeToDelete?.name ?? "???")' exercise type?",
-        isPresented: $showingDeleteConfirmation, titleVisibility: .visible
-      ) {
-        Button("Delete", role: .destructive) {
-          if let exerciseType = exerciseTypeToDelete {
-            _ = DatabaseHelper.shared.deleteExerciseType(id: exerciseType.id)
+        .sheet(
+          isPresented: $showingAddSheet,
+          onDismiss: {
             exerciseTypes = DatabaseHelper.shared.getExerciseTypesForCategory(
               categoryId: category.id)
           }
+        ) {
+          AddExerciseTypeSheet(
+            category: category,
+            exerciseTypeToEdit: selectedExerciseType)
         }
-        Button("Cancel", role: .cancel) {}
-      }
-    }
+        .confirmationDialog(
+          "Are you sure you want to delete the '\(exerciseTypeToDelete?.name ?? "???")' exercise type?",
+          isPresented: $showingDeleteConfirmation, titleVisibility: .visible
+        ) {
+          Button("Delete", role: .destructive) {
+            if let exerciseType = exerciseTypeToDelete {
+              _ = DatabaseHelper.shared.deleteExerciseType(id: exerciseType.id)
+              exerciseTypes = DatabaseHelper.shared.getExerciseTypesForCategory(
+                categoryId: category.id)
+            }
+          }
+          Button("Cancel", role: .cancel) {}
+        }
+    }.background(Color("Background"))
   }
 
   private func deleteExerciseType(at offsets: IndexSet) {

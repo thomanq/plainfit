@@ -69,7 +69,7 @@ struct CalendarView: View {
                 }
               }
             }
-          }
+          }.background(Color("Background"))
         }
         .onAppear {
           if let scrollToDate = calendar.date(

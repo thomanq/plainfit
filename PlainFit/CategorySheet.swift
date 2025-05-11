@@ -40,16 +40,17 @@ struct CategorySheet: View {
             onSave(updatedCategory)
           }
         }
-      }
-      .navigationTitle("Category")
-      .navigationBarItems(
-        trailing: Button("Cancel") {
-          dismiss()
+      }.scrollContentBackground(.hidden)
+        .background(Color("Background"))
+        .navigationTitle("Category")
+        .navigationBarItems(
+          trailing: Button("Cancel") {
+            dismiss()
+          }
+        )
+        .sheet(isPresented: $isIconPickerPresented) {
+          IconPicker(selectedIcon: $selectedIcon, selectedColor: $selectedColor)
         }
-      )
-      .sheet(isPresented: $isIconPickerPresented) {
-        IconPicker(selectedIcon: $selectedIcon, selectedColor: $selectedColor)
-      }
     }
   }
 }

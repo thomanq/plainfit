@@ -33,7 +33,7 @@ struct SettingsView: View {
 
   var body: some View {
     NavigationStack {
-      List {
+      Form {
         Section(header: Text("App Settings")) {
           Picker("Week Starts On", selection: $weekStart) {
             ForEach(WeekStart.allCases, id: \.self) { day in
@@ -58,7 +58,7 @@ struct SettingsView: View {
               Link(
                 "https://github.com/thomanq/plainfit",
                 destination: URL(string: "https://github.com/thomanq/plainfit")!)
-            }
+            }.frame(maxWidth: .infinity, maxHeight: .infinity, ).background(Color("Background"))
           }
 
           Button(action: { isLicensePresented = true }) {
@@ -68,20 +68,21 @@ struct SettingsView: View {
             ScrollView {
               Text(licenseText)
                 .padding()
+            }.background(Color("Background"))
+              .navigationTitle("License")
+              .navigationBarTitleDisplayMode(.inline)
+          }
+        }
+      }.scrollContentBackground(.hidden)
+        .background(Color("Background"))
+        .navigationTitle("Settings")
+        .toolbar {
+          ToolbarItem(placement: .topBarTrailing) {
+            Button("Done") {
+              dismiss()
             }
-            .navigationTitle("License")
-            .navigationBarTitleDisplayMode(.inline)
           }
         }
-      }
-      .navigationTitle("Settings")
-      .toolbar {
-        ToolbarItem(placement: .topBarTrailing) {
-          Button("Done") {
-            dismiss()
-          }
-        }
-      }
     }
   }
 }

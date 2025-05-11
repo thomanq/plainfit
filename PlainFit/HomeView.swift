@@ -114,7 +114,6 @@ struct HomeView: View {
   var body: some View {
     NavigationStack {
       ZStack {
-
         VStack(spacing: 16) {
           HStack {
             Button(action: {
@@ -256,33 +255,36 @@ struct HomeView: View {
                   }
                   .padding(.horizontal)
                 }
-              }.listRowSeparator(.hidden)
-                .swipeActions(edge: .trailing, allowsFullSwipe: true) {
-                  Button(role: .destructive) {
-                    deleteSet(setId: setId)
-                  } label: {
-                    Label("Delete", systemImage: "trash")
-                  }
+              }
+              .listRowSeparator(.hidden)
+              .listRowBackground(Color("Background"))
+              .swipeActions(edge: .trailing, allowsFullSwipe: true) {
+                Button(role: .destructive) {
+                  deleteSet(setId: setId)
+                } label: {
+                  Label("Delete", systemImage: "trash")
                 }
-                .swipeActions(edge: .leading, allowsFullSwipe: true) {
+              }
+              .swipeActions(edge: .leading, allowsFullSwipe: true) {
 
-                  Button(action: {
-                    if let exerciseTypeBySetId = DatabaseHelper.shared.fetchExerciseTypeBySetId(
-                      setId: setId)
-                    {
-                      editExerciseType = exerciseTypeBySetId
-                    }
-                    editExerciseSetId = setId
-                    showEditExerciseSet = true
-                  }) {
-                    Label("Edit", systemImage: "pencil")
+                Button(action: {
+                  if let exerciseTypeBySetId = DatabaseHelper.shared.fetchExerciseTypeBySetId(
+                    setId: setId)
+                  {
+                    editExerciseType = exerciseTypeBySetId
                   }
-                  .tint(.blue)
-
+                  editExerciseSetId = setId
+                  showEditExerciseSet = true
+                }) {
+                  Label("Edit", systemImage: "pencil")
                 }
+                .tint(.blue)
+
+              }
             }
           }
           .listStyle(PlainListStyle())
+
         }
         .navigationDestination(isPresented: $showEditExerciseSet) {
           AddExerciseEntryView(
@@ -308,90 +310,92 @@ struct HomeView: View {
             selectedDate: currentDate, showCategoryPicker: $showCategoryPicker,
             showEditExerciseSet: $showEditExerciseSet, )
         }
-      }
-      .toolbar {
-        ToolbarItem(placement: .principal) {
-          Text("PlainFit Fitness Tracker")
-            .font(.headline)
-        }
 
-        ToolbarItem(placement: .topBarTrailing) {
-          Menu {
-            Button(action: { showingSettings = true }) {
-              Label("Settings", systemImage: "gear")
-            }
+      }.background(Color("Background"))
+
+        .toolbar {
+          ToolbarItem(placement: .principal) {
+            Text("PlainFit Fitness Tracker")
+              .font(.headline)
+          }
+
+          ToolbarItem(placement: .topBarTrailing) {
             Menu {
-              Button(action: {
-                showingImportCsvConfirmation = true
-              }) {
-                Label("Import CSV", systemImage: "square.and.arrow.down")
+              Button(action: { showingSettings = true }) {
+                Label("Settings", systemImage: "gear")
               }
-              Button(action: exportEntries) {
-                Label("Export to CSV", systemImage: "square.and.arrow.up")
-              }
-              Button(action: {
-                showingRestoreDbConfirmation = true
-              }) {
-                Label("Restore DB", systemImage: "tray.and.arrow.down")
-              }
-              Button(action: backupDatabase) {
-                Label("Back up DB", systemImage: "tray.and.arrow.up")
+              Menu {
+                Button(action: {
+                  showingImportCsvConfirmation = true
+                }) {
+                  Label("Import CSV", systemImage: "square.and.arrow.down")
+                }
+                Button(action: exportEntries) {
+                  Label("Export to CSV", systemImage: "square.and.arrow.up")
+                }
+                Button(action: {
+                  showingRestoreDbConfirmation = true
+                }) {
+                  Label("Restore DB", systemImage: "tray.and.arrow.down")
+                }
+                Button(action: backupDatabase) {
+                  Label("Back up DB", systemImage: "tray.and.arrow.up")
+                }
+              } label: {
+                Label("Import / Export", systemImage: "arrow.left.arrow.right")
               }
             } label: {
-              Label("Import / Export", systemImage: "arrow.left.arrow.right")
+              Image(systemName: "line.horizontal.3")
             }
-          } label: {
-            Image(systemName: "line.horizontal.3")
           }
         }
-      }
-      .onChange(of: currentDate) { oldValue, newValue in
-        fitnessEntries = DatabaseHelper.shared.fetchEntries(for: newValue)
-      }
-      .onAppear {
-        fitnessEntries = DatabaseHelper.shared.fetchEntries(for: currentDate)
-        categories = DatabaseHelper.shared.fetchCategories()
-      }
-      .navigationBarTitleDisplayMode(.inline)
-      .confirmationDialog(
-        "Are you sure you want to delete this exercise set?",
-        isPresented: $showingDeleteConfirmation,
-        titleVisibility: .visible
-      ) {
-        Button("Delete", role: .destructive) {
-          if let setId = setToDelete {
-            DatabaseHelper.shared.deleteEntriesBySetId(setId: setId)
-            fitnessEntries = DatabaseHelper.shared.fetchEntries(for: currentDate)
-          }
-          setToDelete = nil
+        .onChange(of: currentDate) { oldValue, newValue in
+          fitnessEntries = DatabaseHelper.shared.fetchEntries(for: newValue)
         }
-        Button("Cancel", role: .cancel) {}
-      }
-      .confirmationDialog(
-        "Are you sure you want to import the CSV? This will erase all current data and replace it with the content of the file.",
-        isPresented: $showingImportCsvConfirmation,
-        titleVisibility: .visible
-      ) {
-        Button(
-          "Import", role: .destructive
+        .onAppear {
+          fitnessEntries = DatabaseHelper.shared.fetchEntries(for: currentDate)
+          categories = DatabaseHelper.shared.fetchCategories()
+        }
+        .navigationBarTitleDisplayMode(.inline)
+        .confirmationDialog(
+          "Are you sure you want to delete this exercise set?",
+          isPresented: $showingDeleteConfirmation,
+          titleVisibility: .visible
         ) {
-          isFileImporterPresented = true
-          currentImportType = .csv
+          Button("Delete", role: .destructive) {
+            if let setId = setToDelete {
+              DatabaseHelper.shared.deleteEntriesBySetId(setId: setId)
+              fitnessEntries = DatabaseHelper.shared.fetchEntries(for: currentDate)
+            }
+            setToDelete = nil
+          }
+          Button("Cancel", role: .cancel) {}
         }
+        .confirmationDialog(
+          "Are you sure you want to import the CSV? This will erase all current data and replace it with the content of the file.",
+          isPresented: $showingImportCsvConfirmation,
+          titleVisibility: .visible
+        ) {
+          Button(
+            "Import", role: .destructive
+          ) {
+            isFileImporterPresented = true
+            currentImportType = .csv
+          }
 
-        Button("Cancel", role: .cancel) {}
-      }
-      .confirmationDialog(
-        "Are you sure you want to restore the database? This will erase all current data in the app.",
-        isPresented: $showingRestoreDbConfirmation,
-        titleVisibility: .visible
-      ) {
-        Button("Restore", role: .destructive) {
-          isFileImporterPresented = true
-          currentImportType = .database
+          Button("Cancel", role: .cancel) {}
         }
-        Button("Cancel", role: .cancel) {}
-      }
+        .confirmationDialog(
+          "Are you sure you want to restore the database? This will erase all current data in the app.",
+          isPresented: $showingRestoreDbConfirmation,
+          titleVisibility: .visible
+        ) {
+          Button("Restore", role: .destructive) {
+            isFileImporterPresented = true
+            currentImportType = .database
+          }
+          Button("Cancel", role: .cancel) {}
+        }
     }
     .sheet(isPresented: $showingCalendar) {
       CalendarView(selectedDate: $currentDate)
