@@ -2,8 +2,8 @@
   "categories": {
     "Abs": {
       "icon": {
-        "name": "circle.fill",
-        "color": "#000000FF"
+        "name": "figure.core.training",
+        "color": "#eb8334FF"
       },
       "exercises": {
         "Crunches": {
@@ -40,8 +40,8 @@
     },
     "Legs": {
       "icon": {
-        "name": "circle.fill",
-        "color": "#000000FF"
+        "name": "figure.cross.training",
+        "color": "#b8ada2FF"
       },
       "exercises": {
         "Leg Press": {
@@ -78,8 +78,8 @@
     },
     "Back": {
       "icon": {
-        "name": "circle.fill",
-        "color": "#000000FF"
+        "name": "figure.play",
+        "color": "#bdeb34FF"
       },
       "exercises": {
         "Deadlift": {
@@ -113,8 +113,8 @@
     },
     "Strength": {
       "icon": {
-        "name": "circle.fill",
-        "color": "#000000FF"
+        "name": "figure.strengthtraining.traditional",
+        "color": "#65eb34FF"
       },
       "exercises": {
         "Push-up": {
@@ -157,27 +157,41 @@
     },
     "Cardio": {
       "icon": {
-        "name": "circle.fill",
-        "color": "#000000FF"
+        "name": "figure.mixed.cardio",
+        "color": "#1c6e01FF"
       },
       "exercises": {
         "Running (Outdoor)": {
-          "type": "distance,time"
+          "type": "distance,time",
+          "iconName": "figure.run"
         },
         "Running (Treadmill)": {
-          "type": "distance,time"
+          "type": "distance,time",
+          "iconName": "figure.run.treadmill"
         },
-        "Cycling": {
-          "type": "distance,time"
+        "Cycling (Outdoor)": {
+          "type": "distance,time",
+          "iconName": "figure.outdoor.cycle"
+        },
+         "Cycling (Indoor)": {
+          "type": "distance,time",
+          "iconName": "figure.indoor.cycle"
         },
         "Swimming": {
-          "type": "distance,time"
+          "type": "distance,time",
+          "iconName": "figure.pool.swim"
         },
-        "Rowing": {
-          "type": "distance,time"
+        "Rowing (Indoor)": {
+          "type": "distance,time",
+          "iconName": "figure.indoor.rowing"
+        },
+        "Rowing (Outdoor)": {
+          "type": "distance,time",
+          "iconName": "figure.outdoor.rowing"
         },
         "Jump Rope": {
-          "type": "reps,time"
+          "type": "reps,time",
+          "iconName": "figure.jumprope"
         },
         "Jumping Jacks": {
           "type": "reps,time"
@@ -204,8 +218,8 @@
     },
     "Chest": {
       "icon": {
-        "name": "circle.fill",
-        "color": "#000000FF"
+        "name": "figure.wrestling",
+        "color": "#3489ebFF"
       },
       "exercises": {
         "Push-up": {
@@ -230,8 +244,8 @@
     },
     "Shoulders": {
       "icon": {
-        "name": "circle.fill",
-        "color": "#000000FF"
+        "name": "figure.strengthtraining.traditional",
+        "color": "#7134ebFF"
       },
       "exercises": {
         "Shoulder Press": {
@@ -256,8 +270,8 @@
     },
     "Arms": {
       "icon": {
-        "name": "circle.fill",
-        "color": "#000000FF"
+        "name": "figure.strengthtraining.traditional",
+        "color": "#eb4034FF"
       },
       "exercises": {
         "Bicep Curls": {
@@ -282,8 +296,8 @@
     },
     "Mobility & Stretching": {
       "icon": {
-        "name": "circle.fill",
-        "color": "#000000FF"
+        "name": "figure.cooldown",
+        "color": "#f28ad1FF"
       },
       "exercises": {
         "Forward Fold": {
@@ -311,8 +325,8 @@
     },
     "Bodyweight": {
       "icon": {
-        "name": "circle.fill",
-        "color": "#000000FF"
+        "name": "figure.wrestling",
+        "color": "#dbbea0FF"
       },
       "exercises": {
         "Push-up": {
