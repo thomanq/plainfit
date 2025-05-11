@@ -3,6 +3,7 @@ import SwiftUI
 struct CalendarView: View {
   @Environment(\.dismiss) var dismiss
   @Binding var selectedDate: Date
+  @State private var hasScrolled = false
   @State private var months: [Date] = []
   @State private var scrollOffset: CGFloat = 0
   @AppStorage("weekStart") private var weekStart = WeekStart.sunday
@@ -14,12 +15,15 @@ struct CalendarView: View {
     return formatter
   }()
 
+  var centralMonths: [Date] = []
+
   init(selectedDate: Binding<Date>) {
     self._selectedDate = selectedDate
     let initialMonths = (-2...2).compactMap { offset in
       calendar.date(byAdding: .month, value: offset, to: selectedDate.wrappedValue)
     }
     _months = State(initialValue: initialMonths)
+    centralMonths = Array(initialMonths[1...3])
   }
 
   private func loadMoreMonths(direction: ScrollDirection) {
@@ -62,10 +66,12 @@ struct CalendarView: View {
               )
               .id(monthFormatter.string(from: month))
               .onAppear {
-                if month == months.last {
-                  loadMoreMonths(direction: .down)
-                } else if month == months.first {
-                  loadMoreMonths(direction: .up)
+                if hasScrolled && !centralMonths.contains(month) {
+                  if month == months.last {
+                    loadMoreMonths(direction: .down)
+                  } else if month == months.first {
+                    loadMoreMonths(direction: .up)
+                  }
                 }
               }
             }
@@ -73,9 +79,13 @@ struct CalendarView: View {
         }
         .onAppear {
           if let scrollToDate = calendar.date(
-            byAdding: .month, value: 2, to: selectedDate)
+            byAdding: .month, value: 0, to: selectedDate)
           {
-            proxy.scrollTo(monthFormatter.string(from: scrollToDate), anchor: .center)
+            proxy.scrollTo(
+              monthFormatter.string(from: scrollToDate), anchor: UnitPoint(x: 0.0, y: 0.1))
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+              hasScrolled = true
+            }
           }
         }
         .navigationBarItems(
