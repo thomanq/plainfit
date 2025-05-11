@@ -151,7 +151,7 @@ struct MonthView: View {
       HStack {
         ForEach(CalendarView(selectedDate: $selectedDate).weekDays(), id: \.self) { day in
           Text(day)
-            .frame(width: cellWidth - 10)
+            .frame(width: cellWidth).padding(.bottom, 10)
         }
       }
       .padding(.horizontal)
@@ -213,8 +213,6 @@ struct DayCell: View {
         )
         .offset(y: -10)
 
-      Spacer(minLength: 0)
-
       if isCurrentMonth {
 
         let activityChunks = Array(activities).chunked(into: 2)
@@ -234,6 +232,7 @@ struct DayCell: View {
           }
         }
       }
+      Spacer(minLength: 0)
     }.frame(width: cellWidth)
   }
 }
