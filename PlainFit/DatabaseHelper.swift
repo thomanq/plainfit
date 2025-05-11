@@ -144,10 +144,10 @@ struct PartialFitnessEntry: Encodable, PersistableRecord {
 struct FitnessActivity: Hashable {
   let category: Category
   let exerciseType: ExerciseType
-    
-    func hash(into hasher: inout Hasher) {
-        hasher.combine(exerciseType.id)
-    }
+
+  func hash(into hasher: inout Hasher) {
+    hasher.combine(exerciseType.id)
+  }
 }
 typealias DayNumber = Int
 struct FitnessActivitySummary {
@@ -321,6 +321,45 @@ class DatabaseHelper {
                 exerciseTypeId: exerciseTypeId
               )
               let _ = try partialEntry.insertAndFetch(db, as: FitnessEntry.self)
+            }
+          }
+
+          let populateFakeData: Bool = false
+          if populateFakeData {
+            var setId: Int64 = 10
+            let calendar = Calendar.current
+            let today = Date()
+            let numMonths = 5
+
+            let exerciseNames = exercisesData.categories.flatMap { $0.value.exercises.keys }
+
+            for dayOffset in 1..<(30 * numMonths) {
+              let day = calendar.date(byAdding: .day, value: -1 * dayOffset, to: today) ?? today
+              let exerciseCount = Int.random(in: 0...5)
+
+              for _ in 0..<exerciseCount {
+                guard let randomExerciseName = exerciseNames.randomElement(),
+                  let exerciseTypeId = try ExerciseType.filter(Column("name") == randomExerciseName)
+                    .fetchOne(db)?.id
+                else {
+                  continue
+                }
+
+                let partialEntry = PartialFitnessEntry(
+                  duration: Int32.random(in: 300...3600),
+                  date: day,
+                  setId: setId,
+                  reps: Int32.random(in: 5...20),
+                  distance: Float.random(in: 0.5...5.0),
+                  distanceUnit: "mi",
+                  weight: Float.random(in: 10.0...100.0),
+                  weightUnit: "lbs",
+                  description: nil,
+                  exerciseTypeId: exerciseTypeId
+                )
+                let _ = try partialEntry.insertAndFetch(db, as: FitnessEntry.self)
+                setId += 1
+              }
             }
           }
         }
@@ -797,18 +836,19 @@ class DatabaseHelper {
     let calendar = Calendar.current
 
     for entry in entries {
-        let day = calendar.component(.day, from: entry.date)
+      let day = calendar.component(.day, from: entry.date)
 
-        if let exerciseType = fetchExerciseTypeBySetId(setId: entry.setId),
-           let category = getCategoriesForExerciseType(exerciseTypeId: exerciseType.id).first {
-            let activity = FitnessActivity(category: category, exerciseType: exerciseType)
+      if let exerciseType = fetchExerciseTypeBySetId(setId: entry.setId),
+        let category = getCategoriesForExerciseType(exerciseTypeId: exerciseType.id).first
+      {
+        let activity = FitnessActivity(category: category, exerciseType: exerciseType)
 
-            if activityByDay[day] != nil {
-                activityByDay[day]?.insert(activity)
-            } else {
-                activityByDay[day] = Set([activity])
-            }
+        if activityByDay[day] != nil {
+          activityByDay[day]?.insert(activity)
+        } else {
+          activityByDay[day] = Set([activity])
         }
+      }
     }
 
     return FitnessActivitySummary(activity: activityByDay)

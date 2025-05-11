@@ -157,7 +157,8 @@ struct HomeView: View {
           }
           .padding(.horizontal)
 
-          let groupedEntries = Dictionary(grouping: fitnessEntries, by: { $0.setId })
+          let groupedEntries = Dictionary(
+            grouping: fitnessEntries.sorted(by: { $0.date < $1.date }), by: { $0.setId })
           List {
             ForEach(groupedEntries.keys.sorted(), id: \.self) { setId in
               VStack(alignment: .leading) {
@@ -206,7 +207,9 @@ struct HomeView: View {
                     }
                     .padding(.vertical, 10)
                     .padding(.horizontal, 8)
-                    .background(colorScheme == .dark ? Color.white.opacity(0.15): Color.gray.opacity(0.1))
+                    .background(
+                      colorScheme == .dark ? Color.white.opacity(0.15) : Color.gray.opacity(0.1)
+                    )
                     .clipShape(RoundedRectangle(cornerRadius: 8))
 
                     // Data rows
@@ -254,29 +257,29 @@ struct HomeView: View {
                   .padding(.horizontal)
                 }
               }.listRowSeparator(.hidden)
-              .swipeActions(edge: .trailing, allowsFullSwipe: true) {
-                Button(role: .destructive) {
-                  deleteSet(setId: setId)
-                } label: {
-                  Label("Delete", systemImage: "trash")
-                }
-              }
-              .swipeActions(edge: .leading, allowsFullSwipe: true) {
-
-                Button(action: {
-                  if let exerciseTypeBySetId = DatabaseHelper.shared.fetchExerciseTypeBySetId(
-                    setId: setId)
-                  {
-                    editExerciseType = exerciseTypeBySetId
+                .swipeActions(edge: .trailing, allowsFullSwipe: true) {
+                  Button(role: .destructive) {
+                    deleteSet(setId: setId)
+                  } label: {
+                    Label("Delete", systemImage: "trash")
                   }
-                  editExerciseSetId = setId
-                  showEditExerciseSet = true
-                }) {
-                  Label("Edit", systemImage: "pencil")
                 }
-                .tint(.blue)
+                .swipeActions(edge: .leading, allowsFullSwipe: true) {
 
-              }
+                  Button(action: {
+                    if let exerciseTypeBySetId = DatabaseHelper.shared.fetchExerciseTypeBySetId(
+                      setId: setId)
+                    {
+                      editExerciseType = exerciseTypeBySetId
+                    }
+                    editExerciseSetId = setId
+                    showEditExerciseSet = true
+                  }) {
+                    Label("Edit", systemImage: "pencil")
+                  }
+                  .tint(.blue)
+
+                }
             }
           }
           .listStyle(PlainListStyle())
