@@ -22,7 +22,8 @@ private enum ImportType {
 }
 
 struct HomeView: View {
-  @Environment(\.colorScheme) var colorScheme
+  @AppStorage("themeOption") private var themeOption = ThemeOptions.system
+  @Environment(\.colorScheme) private var colorScheme
 
   @State private var fitnessEntries: [FitnessEntry] = []
   @State private var currentDate: Date = Date()
@@ -312,6 +313,7 @@ struct HomeView: View {
         }
 
       }.background(Color("Background"))
+        .preferredColorScheme(toScheme(themeOption))
 
         .toolbar {
           ToolbarItem(placement: .principal) {

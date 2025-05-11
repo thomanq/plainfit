@@ -15,10 +15,32 @@ enum UnitSystem: String, CaseIterable, Identifiable {
   var id: String { self.rawValue }
 }
 
+enum ThemeOptions: String, CaseIterable, Identifiable {
+  case system = "System"
+  case light = "Light"
+  case dark = "Dark"
+
+  var id: String { self.rawValue }
+}
+
+func toScheme(_ themeOption: ThemeOptions) -> ColorScheme {
+  switch themeOption {
+  case ThemeOptions.system:
+    return UIScreen.main.traitCollection.userInterfaceStyle == UIUserInterfaceStyle.dark
+      ? ColorScheme.dark : ColorScheme.light
+  case ThemeOptions.light:
+    return ColorScheme.light
+  case ThemeOptions.dark:
+    return ColorScheme.dark
+  }
+}
+
 struct SettingsView: View {
   @Environment(\.dismiss) var dismiss
   @AppStorage("weekStart") private var weekStart = WeekStart.sunday
   @AppStorage("unitSystem") private var unitSystem = UnitSystem.imperial
+  @AppStorage("themeOption") private var themeOption = ThemeOptions.system
+
   @State private var isVersionPresented = false
   @State private var isLicensePresented = false
 
@@ -35,6 +57,11 @@ struct SettingsView: View {
     NavigationStack {
       Form {
         Section(header: Text("App Settings")) {
+          Picker("Theme", selection: $themeOption) {
+            ForEach(ThemeOptions.allCases, id: \.self) { theme in
+              Text(theme.rawValue).tag(theme)
+            }
+          }
           Picker("Week Starts On", selection: $weekStart) {
             ForEach(WeekStart.allCases, id: \.self) { day in
               Text(day.rawValue).tag(day)
@@ -84,5 +111,6 @@ struct SettingsView: View {
           }
         }
     }
+    .preferredColorScheme(toScheme(themeOption))
   }
 }
