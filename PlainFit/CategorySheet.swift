@@ -19,6 +19,7 @@ struct CategorySheet: View {
     NavigationView {
       Form {
         TextField("Category Name", text: $category.name)
+          .listRowBackground(Color("FieldBackground"))
         HStack {
           Text("Icon:")
           Image(systemName: selectedIcon)
@@ -30,7 +31,7 @@ struct CategorySheet: View {
           Button("Pick Icon") {
             isIconPickerPresented = true
           }
-        }
+        }.listRowBackground(Color("FieldBackground"))
 
         Button("Save") {
           if !category.name.isEmpty {
@@ -39,7 +40,7 @@ struct CategorySheet: View {
               iconColor: selectedColor)
             onSave(updatedCategory)
           }
-        }
+        }.listRowBackground(Color("FieldBackground"))
       }.scrollContentBackground(.hidden)
         .background(Color("Background"))
         .navigationTitle("Category")

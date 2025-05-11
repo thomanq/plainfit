@@ -51,6 +51,7 @@ struct AddExerciseTypeSheet: View {
     NavigationView {
       Form {
         TextField("Exercise Name", text: $newName)
+          .listRowBackground(Color("FieldBackground"))
 
         Section(header: Text("Exercise Type")) {
           ForEach(availableTypes, id: \.self) { type in
@@ -70,7 +71,7 @@ struct AddExerciseTypeSheet: View {
               Text(type.capitalized)
             }
           }
-        }
+        }.listRowBackground(Color("FieldBackground"))
 
         Section(header: Text("Category")) {
           HStack {
@@ -87,7 +88,7 @@ struct AddExerciseTypeSheet: View {
                 .foregroundColor(.blue)
             }
           }
-        }
+        }.listRowBackground(Color("FieldBackground"))
 
         Section(header: Text("Icon")) {
           Picker("Icon", selection: $iconType) {
@@ -112,7 +113,7 @@ struct AddExerciseTypeSheet: View {
             }
           }
 
-        }
+        }.listRowBackground(Color("FieldBackground"))
 
         Section {
           Button(exerciseTypeToEdit == nil ? "Add Exercise Type" : "Edit Exercise Type") {
@@ -159,7 +160,7 @@ struct AddExerciseTypeSheet: View {
               dismiss()
             }
           }
-        }
+        }.listRowBackground(Color("FieldBackground"))
 
         if let exerciseType = exerciseTypeToEdit {
           Section {
@@ -176,7 +177,7 @@ struct AddExerciseTypeSheet: View {
               }
               Button("Cancel", role: .cancel) {}
             }
-          }
+          }.listRowBackground(Color("FieldBackground"))
         }
       }.scrollContentBackground(.hidden)
         .background(Color("Background"))

@@ -73,8 +73,10 @@ struct AddExerciseEntryView: View {
   var body: some View {
     Form {
       TextField("Exercise Name", text: .constant(exerciseType.name))
+        .listRowBackground(Color("FieldBackground"))
         .disabled(true)
-      DatePicker("Date and Time", selection: $exerciseDate)
+      DatePicker("Date and Time", selection: $exerciseDate).listRowBackground(
+        Color("FieldBackground"))
 
       if exerciseType.type.contains("time") {
         Section(header: Text("Duration")) {
@@ -95,14 +97,14 @@ struct AddExerciseEntryView: View {
               .keyboardType(.numberPad)
               .frame(maxWidth: 50)
           }
-        }
+        }.listRowBackground(Color("FieldBackground"))
       }
 
       if exerciseType.type.contains("reps") {
         Section(header: Text("Reps")) {
           TextField("Reps", text: $reps)
             .keyboardType(.numberPad)
-        }
+        }.listRowBackground(Color("FieldBackground"))
       }
 
       if exerciseType.type.contains("distance") {
@@ -121,7 +123,8 @@ struct AddExerciseEntryView: View {
                 .foregroundColor(.gray)
             }
           }
-        }
+
+        }.listRowBackground(Color("FieldBackground"))
       }
 
       if exerciseType.type.contains("weight") {
@@ -140,12 +143,12 @@ struct AddExerciseEntryView: View {
                 .foregroundColor(.gray)
             }
           }
-        }
+        }.listRowBackground(Color("FieldBackground"))
       }
 
       Section(header: Text("Description (Optional)")) {
         TextField("Description", text: $description)
-      }
+      }.listRowBackground(Color("FieldBackground"))
 
       Button(action: {
         if weight.isEmpty && reps.isEmpty && distance.isEmpty && hours.isEmpty && minutes.isEmpty
@@ -159,12 +162,12 @@ struct AddExerciseEntryView: View {
         }
       }) {
         Text(isEditing ? "Edit Exercise" : "Add Exercise to Set")
-      }
+      }.listRowBackground(Color("FieldBackground"))
       if isEditing {
         Button(action: cancelEdit) {
           Text("Cancel")
             .foregroundColor(.red)
-        }
+        }.listRowBackground(Color("FieldBackground"))
       }
       Section(header: Text("Exercises in Set")) {
         List {
@@ -204,7 +207,7 @@ struct AddExerciseEntryView: View {
           \.editMode,
           .constant(EditMode.active)
         )
-      }
+      }.listRowBackground(Color("FieldBackground"))
 
       Button(action: {
         if !reps.isEmpty || !weight.isEmpty || !hours.isEmpty || !minutes.isEmpty
@@ -220,32 +223,32 @@ struct AddExerciseEntryView: View {
         }
       }) {
         Text(showEditExerciseSet ? "Edit Set" : "Save Set")
-      }
+      }.listRowBackground(Color("FieldBackground"))
       if showEditExerciseSet {
         Section {
           Button("Delete Set", role: .destructive) {
             showingDeleteConfirmation = true
-          }
-          .confirmationDialog(
-            "Are you sure you want to delete this set?",
-            isPresented: $showingDeleteConfirmation,
-            titleVisibility: .visible
-          ) {
-            Button("Delete", role: .destructive) {
-              DatabaseHelper.shared.deleteEntriesBySetId(setId: setId)
-              dismiss()
+          }.listRowBackground(Color("FieldBackground"))
+            .confirmationDialog(
+              "Are you sure you want to delete this set?",
+              isPresented: $showingDeleteConfirmation,
+              titleVisibility: .visible
+            ) {
+              Button("Delete", role: .destructive) {
+                DatabaseHelper.shared.deleteEntriesBySetId(setId: setId)
+                dismiss()
+              }
+              Button("Cancel", role: .cancel) {}
             }
-            Button("Cancel", role: .cancel) {}
-          }
         }
       }
     }.scrollContentBackground(.hidden)
       .background(Color("Background"))
+      .navigationTitle(showEditExerciseSet ? "Edit Exercise" : "Add Exercise")
       .alert(isPresented: $showErrorModal) {
         Alert(
           title: Text("Error"), message: Text(errorMessage), dismissButton: .default(Text("OK")))
       }
-      .navigationTitle(showEditExerciseSet ? "Edit Exercise" : "Add Exercise")
   }
 
   private func addExercise() {

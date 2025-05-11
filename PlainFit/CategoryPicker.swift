@@ -190,7 +190,10 @@ struct SearchBar: View {
       Image(systemName: "magnifyingglass")
         .foregroundColor(.gray)
       TextField("Search exercises...", text: $text)
-        .textFieldStyle(RoundedBorderTextFieldStyle())
+        .padding(6)
+        .background(Color("FieldBackground"))
+        .clipShape(RoundedRectangle(cornerRadius: 7))
+        .disableAutocorrection(true)
     }
   }
 }
