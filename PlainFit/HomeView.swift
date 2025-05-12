@@ -41,6 +41,63 @@ func exportToCSVFile() -> URL? {
     return nil
   }
 }
+func exportEntries() {
+  if let fileURL = exportToCSVFile() {
+    let activityViewController = UIActivityViewController(
+      activityItems: [fileURL],
+      applicationActivities: nil
+    )
+    if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
+      let window = windowScene.windows.first,
+      let rootViewController = window.rootViewController
+    {
+      rootViewController.present(activityViewController, animated: true)
+    }
+  } else {
+    print("Failed to generate CSV file.")
+  }
+}
+
+func extractDatabaseFile() -> URL? {
+  let dateFormatter = DateFormatter()
+  dateFormatter.dateFormat = "yyyyMMdd_HHmmss"
+  let dateSuffix = dateFormatter.string(from: Date())
+  let fileName = "PlainFit_\(dateSuffix).db"
+
+  do {
+    let databaseURL = try FileManager.default.url(
+      for: .documentDirectory,
+      in: .userDomainMask,
+      appropriateFor: nil,
+      create: true
+    ).appendingPathComponent("plainfit.sqlite")
+
+    let temporaryURL = FileManager.default.temporaryDirectory.appendingPathComponent(fileName)
+    try FileManager.default.copyItem(at: databaseURL, to: temporaryURL)
+    return temporaryURL
+  } catch {
+    print("Error accessing or copying database file: \(error)")
+    return nil
+  }
+}
+
+func backupDatabase() {
+  if let temporaryURL = extractDatabaseFile() {
+    do {
+      let activityViewController = UIActivityViewController(
+        activityItems: [temporaryURL],
+        applicationActivities: nil
+      )
+      if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
+        let rootViewController = windowScene.windows.first?.rootViewController
+      {
+        rootViewController.present(activityViewController, animated: true)
+      }
+    } catch {
+      print("Error accessing or copying database file: \(error)")
+    }
+  }
+}
 
 struct HomeView: View {
   @AppStorage("bookmarkData") var savedBookmark: Data?
@@ -67,54 +124,6 @@ struct HomeView: View {
   @State private var showingRestoreDbPicker = false
   @State private var currentImportType: ImportType?
   @State private var isFileImporterPresented = false
-
-  private func exportEntries() {
-    if let fileURL = exportToCSVFile() {
-      let activityViewController = UIActivityViewController(
-        activityItems: [fileURL],
-        applicationActivities: nil
-      )
-      if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
-        let window = windowScene.windows.first,
-        let rootViewController = window.rootViewController
-      {
-        rootViewController.present(activityViewController, animated: true)
-      }
-    } else {
-      print("Failed to generate CSV file.")
-    }
-  }
-
-  private func backupDatabase() {
-    let dateFormatter = DateFormatter()
-    dateFormatter.dateFormat = "yyyyMMdd_HHmmss"
-    let dateSuffix = dateFormatter.string(from: Date())
-    let fileName = "PlainFit_\(dateSuffix).db"
-
-    do {
-      let databaseURL = try FileManager.default.url(
-        for: .documentDirectory,
-        in: .userDomainMask,
-        appropriateFor: nil,
-        create: true
-      ).appendingPathComponent("plainfit.sqlite")
-
-      let temporaryURL = FileManager.default.temporaryDirectory.appendingPathComponent(fileName)
-      try FileManager.default.copyItem(at: databaseURL, to: temporaryURL)
-
-      let activityViewController = UIActivityViewController(
-        activityItems: [temporaryURL],
-        applicationActivities: nil
-      )
-      if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
-        let rootViewController = windowScene.windows.first?.rootViewController
-      {
-        rootViewController.present(activityViewController, animated: true)
-      }
-    } catch {
-      print("Error accessing or copying database file: \(error)")
-    }
-  }
 
   var body: some View {
     NavigationStack {
@@ -447,7 +456,7 @@ struct HomeView: View {
             }
             defer { url.stopAccessingSecurityScopedResource() }
             do {
-             savedBookmark = try url.bookmarkData(
+              savedBookmark = try url.bookmarkData(
                 options: .minimalBookmark, includingResourceValuesForKeys: nil, relativeTo: nil)
             } catch {
               print("Bookmark error \(error)")

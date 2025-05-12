@@ -1,41 +1,62 @@
 import AppIntents
 import SwiftUI
 
+func copyUrl(_ fileURL: URL, _ savedBookmark: Data?) async -> IntentResultContainer<
+  String, Never, Never, Never
+> {
+  do {
+    guard let bookmarkData = savedBookmark else {
+      return .result(value: "No bookmark data available")
+    }
+    var isStale = false
+    let bookmarkUrl = try URL(resolvingBookmarkData: bookmarkData, bookmarkDataIsStale: &isStale)
+
+    guard !isStale else {
+      return .result(value: "Bookmark data is stale")
+    }
+
+    guard bookmarkUrl.startAccessingSecurityScopedResource() else {
+      return .result(value: "Can't access security scoped resource")
+    }
+
+    defer { bookmarkUrl.stopAccessingSecurityScopedResource() }
+
+    try FileManager.default.moveItem(
+      at: fileURL, to: bookmarkUrl.appendingPathComponent(fileURL.lastPathComponent))
+
+    return .result(value: "PlainFit data exported")
+  } catch {
+    return .result(value: "Error: \(error.localizedDescription)")
+  }
+}
+
 struct ExportToCSVIntent: AppIntent {
   @AppStorage("bookmarkData") var savedBookmark: Data?
 
   static var title: LocalizedStringResource = "Export to CSV"
 
   @MainActor
-  func perform() async throws -> some IntentResult & ReturnsValue<String> {
+  func perform() async -> some IntentResult & ReturnsValue<String> {
     guard let fileURL = exportToCSVFile() else {
       return .result(value: "Failed to export data")
     }
 
-    do {
-      guard let bookmarkData = savedBookmark else {
-        return .result(value: "No bookmark data available")
-      }
-      var isStale = false
-      let downloadsUrl = try URL(resolvingBookmarkData: bookmarkData, bookmarkDataIsStale: &isStale)
+    return await copyUrl(fileURL, savedBookmark)
+  }
+}
 
-      guard !isStale else {
-        return .result(value: "Bookmark data is stale")
-      }
+struct BackupDataBaseIntent: AppIntent {
+  @AppStorage("bookmarkData") var savedBookmark: Data?
 
-      guard downloadsUrl.startAccessingSecurityScopedResource() else {
-        return .result(value: "Can't access security scoped resource")
-      }
+  static var title: LocalizedStringResource = "Back up database"
 
-      defer { downloadsUrl.stopAccessingSecurityScopedResource() }
-
-      try FileManager.default.moveItem(
-        at: fileURL, to: downloadsUrl.appendingPathComponent(fileURL.lastPathComponent))
-
-      return .result(value: "PlainFit data exported to CSV")
-    } catch {
-      return .result(value: "Error: \(error.localizedDescription)")
+  @MainActor
+  func perform() async -> some IntentResult & ReturnsValue<String> {
+    guard let fileURL = extractDatabaseFile() else {
+      return .result(value: "Failed to export data")
     }
+
+    return await copyUrl(fileURL, savedBookmark)
   }
 }
 
@@ -46,6 +67,12 @@ struct PlainFitShortcuts: AppShortcutsProvider {
       intent: ExportToCSVIntent(),
       phrases: ["Export my \(.applicationName) data to CSV"],
       shortTitle: "Export to CSV",
+      systemImageName: "square.and.arrow.up"
+    )
+    AppShortcut(
+      intent: BackupDataBaseIntent(),
+      phrases: ["Back up the \(.applicationName) database"],
+      shortTitle: "Back up database",
       systemImageName: "square.and.arrow.up"
     )
   }
