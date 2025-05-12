@@ -10,6 +10,7 @@ extension UTType {
 private enum ImportType {
   case csv
   case database
+  case folder
 
   var contentTypes: [UTType] {
     switch self {
@@ -17,11 +18,32 @@ private enum ImportType {
       return [.commaSeparatedText]
     case .database:
       return [.sqliteDatabase, UTType(filenameExtension: "db")!]
+    case .folder:
+      return [.folder]
     }
   }
 }
 
+func exportToCSVFile() -> URL? {
+  let dateFormatter = DateFormatter()
+  dateFormatter.dateFormat = "yyyyMMdd_HHmmss"
+  let dateSuffix = dateFormatter.string(from: Date())
+  let fileName = "PlainFit_\(dateSuffix).csv"
+
+  let csvString = DatabaseHelper.shared.exportToCSV()
+
+  do {
+    let fileURL = FileManager.default.temporaryDirectory.appendingPathComponent(fileName)
+    try csvString.write(to: fileURL, atomically: true, encoding: .utf8)
+    return fileURL
+  } catch {
+    print("Error writing CSV to file: \(error)")
+    return nil
+  }
+}
+
 struct HomeView: View {
+  @AppStorage("bookmarkData") var savedBookmark: Data?
   @AppStorage("themeOption") private var themeOption = ThemeOptions.system
   @Environment(\.colorScheme) private var colorScheme
 
@@ -45,24 +67,6 @@ struct HomeView: View {
   @State private var showingRestoreDbPicker = false
   @State private var currentImportType: ImportType?
   @State private var isFileImporterPresented = false
-
-  func exportToCSVFile() -> URL? {
-    let dateFormatter = DateFormatter()
-    dateFormatter.dateFormat = "yyyyMMdd_HHmmss"
-    let dateSuffix = dateFormatter.string(from: Date())
-    let fileName = "PlainFit_\(dateSuffix).csv"
-
-    let csvString = DatabaseHelper.shared.exportToCSV()
-
-    do {
-      let fileURL = FileManager.default.temporaryDirectory.appendingPathComponent(fileName)
-      try csvString.write(to: fileURL, atomically: true, encoding: .utf8)
-      return fileURL
-    } catch {
-      print("Error writing CSV to file: \(error)")
-      return nil
-    }
-  }
 
   private func exportEntries() {
     if let fileURL = exportToCSVFile() {
@@ -343,6 +347,13 @@ struct HomeView: View {
                 Button(action: backupDatabase) {
                   Label("Back up DB", systemImage: "tray.and.arrow.up")
                 }
+                Button(action: {
+                  isFileImporterPresented = true
+                  currentImportType = .folder
+                }) {
+                  Label("Choose folder for Shortcut", systemImage: "folder.badge.gearshape")
+                }
+
               } label: {
                 Label("Import / Export", systemImage: "arrow.left.arrow.right")
               }
@@ -428,6 +439,18 @@ struct HomeView: View {
           case .database:
             if DatabaseHelper.shared.restoreDatabase(from: url) {
               fitnessEntries = DatabaseHelper.shared.fetchEntries(for: currentDate)
+            }
+          case .folder:
+            guard url.startAccessingSecurityScopedResource() else {
+              print("Error accessing security scoped resource")
+              return
+            }
+            defer { url.stopAccessingSecurityScopedResource() }
+            do {
+             savedBookmark = try url.bookmarkData(
+                options: .minimalBookmark, includingResourceValuesForKeys: nil, relativeTo: nil)
+            } catch {
+              print("Bookmark error \(error)")
             }
           }
         }
