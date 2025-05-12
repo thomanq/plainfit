@@ -122,6 +122,8 @@ struct HomeView: View {
   @State private var showingImportPicker = false
   @State private var showingRestoreDbConfirmation = false
   @State private var showingRestoreDbPicker = false
+  @State private var showingShortcutFolderConfirmation: Bool = false
+  @State private var chosenUrl: URL? = nil
   @State private var currentImportType: ImportType?
   @State private var isFileImporterPresented = false
 
@@ -360,7 +362,7 @@ struct HomeView: View {
                   isFileImporterPresented = true
                   currentImportType = .folder
                 }) {
-                  Label("Choose folder for Shortcut", systemImage: "folder.badge.gearshape")
+                  Label("Choose folder for Shortcuts", systemImage: "folder.badge.gearshape")
                 }
 
               } label: {
@@ -418,6 +420,13 @@ struct HomeView: View {
           }
           Button("Cancel", role: .cancel) {}
         }
+        .confirmationDialog(
+          "Folder permissions for '\(chosenUrl?.lastPathComponent ?? "???" )' have been enabled in the Shortcuts app",
+          isPresented: $showingShortcutFolderConfirmation,
+          titleVisibility: .visible
+        ) {
+          Button("OK", role: .cancel) {}
+        }
     }
     .sheet(isPresented: $showingCalendar) {
       CalendarView(selectedDate: $currentDate)
@@ -458,6 +467,8 @@ struct HomeView: View {
             do {
               savedBookmark = try url.bookmarkData(
                 options: .minimalBookmark, includingResourceValuesForKeys: nil, relativeTo: nil)
+              chosenUrl = url
+              showingShortcutFolderConfirmation = true
             } catch {
               print("Bookmark error \(error)")
             }
