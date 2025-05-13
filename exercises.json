@@ -359,7 +359,7 @@
       "setId": "1",
       "reps": "10",
       "weight": "20",
-      "description": "Here is a simple exercise, swipe <- left to delete it."
+      "description": "Here is a sample exercise, swipe <- left to delete it."
     },
     {
       "exerciseName": "Running (Outdoor)",
