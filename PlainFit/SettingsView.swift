@@ -81,7 +81,7 @@ struct SettingsView: View {
           }
           .navigationDestination(isPresented: $isVersionPresented) {
             VStack {
-              Text("Version 1.0")
+              Text("Version 1.0.1")
               Link(
                 "https://github.com/thomanq/plainfit",
                 destination: URL(string: "https://github.com/thomanq/plainfit")!)

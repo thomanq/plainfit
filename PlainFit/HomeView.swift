@@ -126,6 +126,8 @@ struct HomeView: View {
   @State private var chosenUrl: URL? = nil
   @State private var currentImportType: ImportType?
   @State private var isFileImporterPresented = false
+  @State private var showErrorAlert = false
+  @State private var errorMessage = ""
 
   var body: some View {
     NavigationStack {
@@ -427,6 +429,11 @@ struct HomeView: View {
         ) {
           Button("OK", role: .cancel) {}
         }
+        .alert("Error", isPresented: $showErrorAlert) {
+          Button("OK", role: .cancel) {}
+        } message: {
+          Text(errorMessage)
+        }
     }
     .sheet(isPresented: $showingCalendar) {
       CalendarView(selectedDate: $currentDate)
@@ -442,6 +449,13 @@ struct HomeView: View {
     ) { result in
       switch result {
       case .success(let url):
+        guard url.startAccessingSecurityScopedResource() else {
+          errorMessage = "Error accessing security scoped resource"
+          showErrorAlert = true
+          return
+        }
+        defer { url.stopAccessingSecurityScopedResource() }
+
         if let importType = currentImportType {
           switch importType {
           case .csv:
@@ -450,33 +464,41 @@ struct HomeView: View {
               let success = DatabaseHelper.shared.importFromCSV(csvString: csvString)
               if success {
                 fitnessEntries = DatabaseHelper.shared.fetchEntries(for: currentDate)
+              } else {
+                errorMessage = "Failed to import CSV file"
+                showErrorAlert = true
+                return
               }
             } catch {
-              print("Error reading CSV file")
+              errorMessage = "Error reading CSV file: \(error.localizedDescription)"
+              showErrorAlert = true
+              return
             }
           case .database:
             if DatabaseHelper.shared.restoreDatabase(from: url) {
               fitnessEntries = DatabaseHelper.shared.fetchEntries(for: currentDate)
-            }
-          case .folder:
-            guard url.startAccessingSecurityScopedResource() else {
-              print("Error accessing security scoped resource")
+            } else {
+              errorMessage = "Failed to restore database"
+              showErrorAlert = true
               return
             }
-            defer { url.stopAccessingSecurityScopedResource() }
+          case .folder:
             do {
               savedBookmark = try url.bookmarkData(
                 options: .minimalBookmark, includingResourceValuesForKeys: nil, relativeTo: nil)
               chosenUrl = url
               showingShortcutFolderConfirmation = true
             } catch {
-              print("Bookmark error \(error)")
+              errorMessage = "Failed to access folder"
+              showErrorAlert = true
+              return
             }
           }
         }
       case .failure:
-        print("Failed to import file")
-        break
+        errorMessage = "Failed to import file"
+        showErrorAlert = true
+        return
       }
       DispatchQueue.main.async {
         currentImportType = nil
