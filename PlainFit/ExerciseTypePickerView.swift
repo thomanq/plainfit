@@ -1,7 +1,8 @@
 import SwiftUI
 
 struct ExerciseTypePickerView: View {
-  let category: Category
+  let category: Category?
+  let isFavoritesView: Bool
   @Binding var showCategoryPicker: Bool
   @Binding var showEditExerciseSet: Bool
   @State private var selectedDate: Date
@@ -14,10 +15,11 @@ struct ExerciseTypePickerView: View {
   @State private var exerciseTypeToDelete: ExerciseType?
 
   init(
-    category: Category, selectedDate: Date, showCategoryPicker: Binding<Bool>,
+    category: Category? = nil, isFavoritesView: Bool = false, selectedDate: Date, showCategoryPicker: Binding<Bool>,
     showEditExerciseSet: Binding<Bool>
   ) {
     self.category = category
+    self.isFavoritesView = isFavoritesView
     self.selectedDate = selectedDate
     _showCategoryPicker = showCategoryPicker
     _showEditExerciseSet = showEditExerciseSet
@@ -25,10 +27,15 @@ struct ExerciseTypePickerView: View {
   }
 
   var filteredExerciseTypes: [ExerciseType] {
-    if searchText.isEmpty {
-      return exerciseTypes
+    let base = searchText.isEmpty
+      ? exerciseTypes
+      : exerciseTypes.filter { $0.name.localizedCaseInsensitiveContains(searchText) }
+    return base.sorted { lhs, rhs in
+      if lhs.isFavorite != rhs.isFavorite {
+        return lhs.isFavorite
+      }
+      return lhs.name.localizedCaseInsensitiveCompare(rhs.name) == .orderedAscending
     }
-    return exerciseTypes.filter { $0.name.localizedCaseInsensitiveContains(searchText) }
   }
 
   var body: some View {
@@ -46,6 +53,18 @@ struct ExerciseTypePickerView: View {
                 selectedExerciseType = exerciseType
                 showingAddEntry = true
               }
+
+            Button(action: {
+              if let updatedExerciseType = DatabaseHelper.shared.toggleExerciseTypeFavorite(id: exerciseType.id) {
+                if let index = exerciseTypes.firstIndex(where: { $0.id == exerciseType.id }) {
+                  exerciseTypes[index] = updatedExerciseType
+                }
+              }
+            }) {
+              Image(systemName: exerciseType.isFavorite ? "star.fill" : "star")
+                .foregroundColor(exerciseType.isFavorite ? .yellow : .gray)
+            }
+            .buttonStyle(BorderlessButtonStyle())
           }.listRowBackground(Color("Background"))
             .swipeActions(edge: .leading, allowsFullSwipe: true) {
               Button(action: {
@@ -68,28 +87,44 @@ struct ExerciseTypePickerView: View {
             showEditExerciseSet: $showEditExerciseSet
           )
         }
-        .navigationTitle(category.name)
+        .navigationTitle(isFavoritesView ? "Favorites" : (category?.name ?? ""))
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
           ToolbarItemGroup(placement: .navigationBarTrailing) {
-            Button(action: { showingAddSheet = true }) {
-              Image(systemName: "plus")
+            if !isFavoritesView {
+              Button(action: { showingAddSheet = true }) {
+                Image(systemName: "plus")
+              }
             }
           }
         }
         .onAppear {
-          exerciseTypes = DatabaseHelper.shared.getExerciseTypesForCategory(categoryId: category.id)
+          if isFavoritesView {
+            exerciseTypes = DatabaseHelper.shared.getFavoriteExerciseTypes()
+          } else if let category = category {
+            exerciseTypes = DatabaseHelper.shared.getExerciseTypesForCategory(categoryId: category.id)
+          }
         }
         .sheet(
           isPresented: $showingAddSheet,
           onDismiss: {
-            exerciseTypes = DatabaseHelper.shared.getExerciseTypesForCategory(
-              categoryId: category.id)
+            if isFavoritesView {
+              exerciseTypes = DatabaseHelper.shared.getFavoriteExerciseTypes()
+            } else if let category = category {
+              exerciseTypes = DatabaseHelper.shared.getExerciseTypesForCategory(
+                categoryId: category.id)
+            }
           }
         ) {
-          AddExerciseTypeSheet(
-            category: category,
-            exerciseTypeToEdit: selectedExerciseType)
+          let editCategory = category ?? DatabaseHelper.shared.getCategoriesForExerciseType(
+            exerciseTypeId: selectedExerciseType.id
+          ).first
+          
+          if let editCategory = editCategory {
+            AddExerciseTypeSheet(
+              category: editCategory,
+              exerciseTypeToEdit: selectedExerciseType)
+          }
         }
         .confirmationDialog(
           "Are you sure you want to delete the '\(exerciseTypeToDelete?.name ?? "???")' exercise type?",
@@ -98,8 +133,12 @@ struct ExerciseTypePickerView: View {
           Button("Delete", role: .destructive) {
             if let exerciseType = exerciseTypeToDelete {
               _ = DatabaseHelper.shared.deleteExerciseType(id: exerciseType.id)
-              exerciseTypes = DatabaseHelper.shared.getExerciseTypesForCategory(
-                categoryId: category.id)
+              if isFavoritesView {
+                exerciseTypes = DatabaseHelper.shared.getFavoriteExerciseTypes()
+              } else if let category = category {
+                exerciseTypes = DatabaseHelper.shared.getExerciseTypesForCategory(
+                  categoryId: category.id)
+              }
             }
           }
           Button("Cancel", role: .cancel) {}

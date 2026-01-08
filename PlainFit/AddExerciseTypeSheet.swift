@@ -133,7 +133,8 @@ struct AddExerciseTypeSheet: View {
                   name: newName,
                   type: newType,
                   iconName: iconType == "default" ? nil : selectedIcon,
-                  iconColor: iconType == "default" ? nil : selectedColor
+                  iconColor: iconType == "default" ? nil : selectedColor,
+                  isFavorite: exerciseType.isFavorite
                 )
                 _ = DatabaseHelper.shared.updateExerciseType(updatedExerciseType)
                 if let category = category {
@@ -147,7 +148,8 @@ struct AddExerciseTypeSheet: View {
                     name: newName,
                     type: newType,
                     iconName: iconType == "default" ? nil : selectedIcon,
-                    iconColor: iconType == "default" ? nil : selectedColor
+                    iconColor: iconType == "default" ? nil : selectedColor,
+                    isFavorite: false
                   )
                 ) {
                   if let category = category {

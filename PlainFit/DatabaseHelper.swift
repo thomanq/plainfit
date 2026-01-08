@@ -73,6 +73,15 @@ struct PartialExerciseType: Encodable, PersistableRecord {
   var type: String
   var iconName: String?
   var iconColor: String?
+  var isFavorite: Bool
+
+  init(name: String, type: String, iconName: String? = nil, iconColor: String? = nil, isFavorite: Bool = false) {
+    self.name = name
+    self.type = type
+    self.iconName = iconName
+    self.iconColor = iconColor
+    self.isFavorite = isFavorite
+  }
 
   static let databaseTableName = "exercise_types"
 
@@ -83,6 +92,7 @@ struct PartialExerciseType: Encodable, PersistableRecord {
       t.column("type", .text).notNull()
       t.column("iconName", .text)
       t.column("iconColor", .text)
+      t.column("isFavorite", .boolean).notNull().defaults(to: false)
     }
   }
 }
@@ -93,6 +103,16 @@ struct ExerciseType: Identifiable, Hashable, Codable, PersistableRecord, Fetchab
   var type: String
   var iconName: String?
   var iconColor: String?
+  var isFavorite: Bool
+
+  init(id: Int64, name: String, type: String, iconName: String? = nil, iconColor: String? = nil, isFavorite: Bool = false) {
+    self.id = id
+    self.name = name
+    self.type = type
+    self.iconName = iconName
+    self.iconColor = iconColor
+    self.isFavorite = isFavorite
+  }
 
   static let databaseTableName = "exercise_types"
 
@@ -102,11 +122,13 @@ struct ExerciseType: Identifiable, Hashable, Codable, PersistableRecord, Fetchab
     hasher.combine(type)
     hasher.combine(iconName)
     hasher.combine(iconColor)
+    hasher.combine(isFavorite)
   }
 
   static func == (lhs: ExerciseType, rhs: ExerciseType) -> Bool {
     return lhs.id == rhs.id && lhs.name == rhs.name && lhs.type == rhs.type
       && lhs.iconName == rhs.iconName && lhs.iconColor == rhs.iconColor
+      && lhs.isFavorite == rhs.isFavorite
   }
 }
 
@@ -225,6 +247,9 @@ struct ExerciseTypeCategory: Codable, FetchableRecord, PersistableRecord {
     }
   }
 }
+// Database schema version - increment this when adding new migrations
+private let currentSchemaVersion = 1
+
 @MainActor
 class DatabaseHelper {
   static let shared = DatabaseHelper()
@@ -252,10 +277,42 @@ class DatabaseHelper {
         try ExerciseTypeCategory.defineTable(db)
       }
 
+      try runMigrations()
       populateInitialData()
 
     } catch {
       print("Database initialization error: \(error)")
+    }
+  }
+  private func runMigrations() throws {
+    try dbQueue.write { db in
+      try db.create(table: "schema_version", ifNotExists: true) { t in
+        t.column("version", .integer).notNull()
+      }
+
+      let dbVersion = try Int.fetchOne(db, sql: "SELECT version FROM schema_version") ?? 0
+
+      if dbVersion < currentSchemaVersion {
+        if dbVersion == 0 {
+          try migration_1_addIsFavoriteToExerciseTypes(db)
+          try db.execute(sql: "INSERT INTO schema_version (version) VALUES (?)", arguments: [currentSchemaVersion])
+        } else {
+          try db.execute(sql: "UPDATE schema_version SET version = ?", arguments: [currentSchemaVersion])
+        }
+      }
+    }
+  }
+
+  // Migration 1: Add isFavorite column to exercise_types table
+  private func migration_1_addIsFavoriteToExerciseTypes(_ db: Database) throws {
+    let columns = try db.columns(in: "exercise_types")
+    let hasIsFavorite = columns.contains { $0.name == "isFavorite" }
+
+    if !hasIsFavorite {
+      try db.alter(table: "exercise_types") { t in
+        t.add(column: "isFavorite", .boolean).notNull().defaults(to: false)
+      }
+      print("Migration 1: Added isFavorite column to exercise_types")
     }
   }
 
@@ -578,6 +635,22 @@ class DatabaseHelper {
     return false
   }
 
+  func toggleExerciseTypeFavorite(id: Int64) -> ExerciseType? {
+    do {
+      return try dbQueue.write { db in
+        guard var exerciseType = try ExerciseType.fetchOne(db, key: id) else {
+          return nil
+        }
+        exerciseType.isFavorite.toggle()
+        try exerciseType.update(db)
+        return exerciseType
+      }
+    } catch {
+      print("Error toggling exercise type favorite: \(error)")
+      return nil
+    }
+  }
+
   func linkExerciseTypeToCategory(exerciseTypeId: Int64, categoryId: Int64) -> Bool {
     do {
       let link = ExerciseTypeCategory(
@@ -651,6 +724,20 @@ class DatabaseHelper {
       }
     } catch {
       print("Error fetching exercise types for category: \(error)")
+      return []
+    }
+  }
+
+  func getFavoriteExerciseTypes() -> [ExerciseType] {
+    do {
+      return try dbQueue.read { db in
+        try ExerciseType
+          .filter(Column("isFavorite") == true)
+          .order(Column("name"))
+          .fetchAll(db)
+      }
+    } catch {
+      print("Error fetching favorite exercise types: \(error)")
       return []
     }
   }

@@ -38,6 +38,19 @@ struct CategoryPicker: View {
         .padding()
       List {
         if searchText.isEmpty {
+          HStack {
+            Text("Favorites")
+            Image(systemName: "star.fill")
+              .foregroundColor(.yellow)
+          }
+          .listRowBackground(Color("Background"))
+          .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
+          .contentShape(Rectangle())
+          .onTapGesture {
+            showExerciseTypePicker = true
+            selectedCategory = Category(id: -1, name: "Favorites", iconName: "star.fill", iconColor: "yellow")
+          }
+          
           ForEach(categories, id: \.self) { category in
             Text(category.name)
               .listRowBackground(Color("Background"))
@@ -151,12 +164,21 @@ struct CategoryPicker: View {
         }
     }.background(Color("Background"))
       .navigationDestination(isPresented: $showExerciseTypePicker) {
-        ExerciseTypePickerView(
-          category: selectedCategory,
-          selectedDate: selectedDate,
-          showCategoryPicker: $showCategoryPicker,
-          showEditExerciseSet: $showEditExerciseSet
-        )
+        if selectedCategory.id == -1 {
+          ExerciseTypePickerView(
+            isFavoritesView: true,
+            selectedDate: selectedDate,
+            showCategoryPicker: $showCategoryPicker,
+            showEditExerciseSet: $showEditExerciseSet
+          )
+        } else {
+          ExerciseTypePickerView(
+            category: selectedCategory,
+            selectedDate: selectedDate,
+            showCategoryPicker: $showCategoryPicker,
+            showEditExerciseSet: $showEditExerciseSet
+          )
+        }
       }
       .navigationDestination(isPresented: $showAddExerciseEntry) {
         AddExerciseEntryView(
