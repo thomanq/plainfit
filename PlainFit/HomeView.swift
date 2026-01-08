@@ -24,6 +24,7 @@ private enum ImportType {
   }
 }
 
+@MainActor
 func exportToCSVFile() -> URL? {
   let dateFormatter = DateFormatter()
   dateFormatter.dateFormat = "yyyyMMdd_HHmmss"
@@ -41,6 +42,7 @@ func exportToCSVFile() -> URL? {
     return nil
   }
 }
+@MainActor
 func exportEntries() {
   if let fileURL = exportToCSVFile() {
     let activityViewController = UIActivityViewController(
@@ -129,180 +131,57 @@ struct HomeView: View {
   @State private var showErrorAlert = false
   @State private var errorMessage = ""
 
+  // Date navigation bar
+  private var dateNavigationBar: some View {
+    HStack {
+      Button(action: {
+        currentDate =
+          Calendar.current.date(byAdding: .day, value: -1, to: currentDate) ?? currentDate
+      }) {
+        Image(systemName: "chevron.left")
+          .foregroundColor(.blue)
+      }
+
+      Spacer()
+
+      Button(action: {
+        showingCalendar = true
+      }) {
+        Image(systemName: "calendar")
+      }
+      .padding(.trailing, 8)
+
+      Text(currentDate.formatted(date: .abbreviated, time: .omitted))
+        .font(.headline)
+
+      Button(action: {
+        currentDate = Date()
+      }) {
+        Image(systemName: "circle.fill")
+          .foregroundColor(.blue)
+          .font(.system(size: 14))
+      }
+      .padding(.leading, 8)
+      Spacer()
+      Button(action: {
+        currentDate =
+          Calendar.current.date(byAdding: .day, value: 1, to: currentDate) ?? currentDate
+      }) {
+        Image(systemName: "chevron.right")
+          .foregroundColor(.blue)
+      }
+
+    }
+    .padding(.horizontal)
+  }
+
   var body: some View {
     NavigationStack {
       ZStack {
         VStack(spacing: 16) {
-          HStack {
-            Button(action: {
-              currentDate =
-                Calendar.current.date(byAdding: .day, value: -1, to: currentDate) ?? currentDate
-            }) {
-              Image(systemName: "chevron.left")
-                .foregroundColor(.blue)
-            }
+          dateNavigationBar
 
-            Spacer()
-
-            Button(action: {
-              showingCalendar = true
-            }) {
-              Image(systemName: "calendar")
-            }
-            .padding(.trailing, 8)
-
-            Text(currentDate.formatted(date: .abbreviated, time: .omitted))
-              .font(.headline)
-
-            Button(action: {
-              currentDate = Date()
-            }) {
-              Image(systemName: "circle.fill")
-                .foregroundColor(.blue)
-                .font(.system(size: 14))
-            }
-            .padding(.leading, 8)
-            Spacer()
-            Button(action: {
-              currentDate =
-                Calendar.current.date(byAdding: .day, value: 1, to: currentDate) ?? currentDate
-            }) {
-              Image(systemName: "chevron.right")
-                .foregroundColor(.blue)
-            }
-
-          }
-          .padding(.horizontal)
-
-          let groupedEntries = Dictionary(
-            grouping: fitnessEntries.sorted(by: { $0.date < $1.date }), by: { $0.setId })
-          List {
-            ForEach(groupedEntries.keys.sorted(), id: \.self) { setId in
-              VStack(alignment: .leading) {
-
-                if let entries: [FitnessEntry] = groupedEntries[setId] {
-                  let hasDuration = entries.contains { $0.duration > 0 }
-                  let hasReps = entries.contains { $0.reps > 0 }
-                  let hasDistance = entries.contains { $0.distance != nil }
-                  let hasWeight = entries.contains { $0.weight != nil }
-
-                  VStack(spacing: 0) {
-                    if let firstEntry = entries.first,
-                      let exerciseTypeBySetId = DatabaseHelper.shared.fetchExerciseTypeBySetId(
-                        setId: firstEntry.setId)
-                    {
-                      Text(exerciseTypeBySetId.name)
-                        .font(.headline)
-                        .padding(.bottom, 16)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                    }
-                    HStack {
-                      Text("#")
-                        .font(.system(.subheadline, design: .rounded, weight: .medium))
-                        .frame(width: 20, alignment: .leading)
-                        .foregroundColor(.secondary)
-                      if hasDuration {
-                        Text("Duration")
-                          .font(.system(.subheadline, design: .rounded, weight: .medium))
-                          .frame(minWidth: 80, maxWidth: .infinity, alignment: .leading)
-                      }
-                      if hasReps {
-                        Text("Reps")
-                          .font(.system(.subheadline, design: .rounded, weight: .medium))
-                          .frame(maxWidth: .infinity, alignment: .leading)
-                      }
-                      if hasDistance {
-                        Text("Distance")
-                          .font(.system(.subheadline, design: .rounded, weight: .medium))
-                          .frame(maxWidth: .infinity, alignment: .leading)
-                      }
-                      if hasWeight {
-                        Text("Weight")
-                          .font(.system(.subheadline, design: .rounded, weight: .medium))
-                          .frame(maxWidth: .infinity, alignment: .leading)
-                      }
-                    }
-                    .padding(.vertical, 10)
-                    .padding(.horizontal, 8)
-                    .background(
-                      colorScheme == .dark ? Color.white.opacity(0.15) : Color.gray.opacity(0.1)
-                    )
-                    .clipShape(RoundedRectangle(cornerRadius: 8))
-
-                    // Data rows
-                    ForEach(Array(entries.enumerated()), id: \.element.id) { index, entry in
-                      VStack(alignment: .leading) {
-                        HStack {
-                          Text("\(index + 1)")
-                            .font(.system(.body, design: .rounded))
-                            .foregroundColor(.secondary)
-                            .frame(width: 20, alignment: .leading)
-
-                          if hasDuration {
-                            Text(formatDuration(entry.duration))
-                              .font(.system(.body, design: .rounded))
-                              .frame(minWidth: 80, maxWidth: .infinity, alignment: .leading)
-                          }
-                          if hasReps {
-                            Text(entry.reps > 0 ? "\(entry.reps)" : "-")
-                              .font(.system(.body, design: .rounded))
-                              .frame(maxWidth: .infinity, alignment: .leading)
-                          }
-                          if hasDistance {
-                            Text(entry.distance.map { String(format: "%.1f", $0) } ?? "-")
-                              .font(.system(.body, design: .rounded))
-                              .frame(maxWidth: .infinity, alignment: .leading)
-                          }
-                          if hasWeight {
-                            Text(entry.weight.map { String(format: "%.1f", $0) } ?? "-")
-                              .font(.system(.body, design: .rounded))
-                              .frame(maxWidth: .infinity, alignment: .leading)
-                          }
-                        }
-                        if let description = entry.description, !description.isEmpty {
-                          Text(description)
-                            .font(.system(.subheadline, design: .rounded))
-                            .foregroundColor(.secondary)
-                            .padding(.top, 4)
-                            .padding(.leading, 28)
-                        }
-                        Divider()
-                      }
-                      .padding(.vertical, 8)
-                    }
-                  }
-                  .padding(.horizontal)
-                }
-              }
-              .listRowSeparator(.hidden)
-              .listRowBackground(Color("Background"))
-              .swipeActions(edge: .trailing, allowsFullSwipe: true) {
-                Button(role: .destructive) {
-                  deleteSet(setId: setId)
-                } label: {
-                  Label("Delete", systemImage: "trash")
-                }
-              }
-              .swipeActions(edge: .leading, allowsFullSwipe: true) {
-
-                Button(action: {
-                  if let exerciseTypeBySetId = DatabaseHelper.shared.fetchExerciseTypeBySetId(
-                    setId: setId)
-                  {
-                    editExerciseType = exerciseTypeBySetId
-                  }
-                  editExerciseSetId = setId
-                  showEditExerciseSet = true
-                }) {
-                  Label("Edit", systemImage: "pencil")
-                }
-                .tint(.blue)
-
-              }
-            }
-          }
-          .listStyle(PlainListStyle())
-
+          entriesList
         }
         .navigationDestination(isPresented: $showEditExerciseSet) {
           AddExerciseEntryView(
@@ -510,6 +389,138 @@ struct HomeView: View {
   private func hideKeyboard() {
     UIApplication.shared.sendAction(
       #selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
+  }
+
+  // Entries list view
+  private var entriesList: some View {
+    let groupedEntries = Dictionary(
+      grouping: fitnessEntries.sorted(by: { $0.date < $1.date }), by: { $0.setId })
+    return List {
+      ForEach(groupedEntries.keys.sorted(), id: \.self) { setId in
+        VStack(alignment: .leading) {
+
+          if let entries: [FitnessEntry] = groupedEntries[setId] {
+                  let hasDuration = entries.contains { $0.duration > 0 }
+                  let hasReps = entries.contains { $0.reps > 0 }
+                  let hasDistance = entries.contains { $0.distance != nil }
+                  let hasWeight = entries.contains { $0.weight != nil }
+
+                  VStack(spacing: 0) {
+                    if let firstEntry = entries.first,
+                      let exerciseTypeBySetId = DatabaseHelper.shared.fetchExerciseTypeBySetId(
+                        setId: firstEntry.setId)
+                    {
+                      Text(exerciseTypeBySetId.name)
+                        .font(.headline)
+                        .padding(.bottom, 16)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                    }
+                    HStack {
+                      Text("#")
+                        .font(.system(.subheadline, design: .rounded, weight: .medium))
+                        .frame(width: 20, alignment: .leading)
+                        .foregroundColor(.secondary)
+                      if hasDuration {
+                        Text("Duration")
+                          .font(.system(.subheadline, design: .rounded, weight: .medium))
+                          .frame(minWidth: 80, maxWidth: .infinity, alignment: .leading)
+                      }
+                      if hasReps {
+                        Text("Reps")
+                          .font(.system(.subheadline, design: .rounded, weight: .medium))
+                          .frame(maxWidth: .infinity, alignment: .leading)
+                      }
+                      if hasDistance {
+                        Text("Distance")
+                          .font(.system(.subheadline, design: .rounded, weight: .medium))
+                          .frame(maxWidth: .infinity, alignment: .leading)
+                      }
+                      if hasWeight {
+                        Text("Weight")
+                          .font(.system(.subheadline, design: .rounded, weight: .medium))
+                          .frame(maxWidth: .infinity, alignment: .leading)
+                      }
+                    }
+                    .padding(.vertical, 10)
+                    .padding(.horizontal, 8)
+                    .background(
+                      colorScheme == .dark ? Color.white.opacity(0.15) : Color.gray.opacity(0.1)
+                    )
+                    .clipShape(RoundedRectangle(cornerRadius: 8))
+
+                    // Data rows
+                    ForEach(Array(entries.enumerated()), id: \.element.id) { index, entry in
+                      VStack(alignment: .leading) {
+                        HStack {
+                          Text("\(index + 1)")
+                            .font(.system(.body, design: .rounded))
+                            .foregroundColor(.secondary)
+                            .frame(width: 20, alignment: .leading)
+
+                          if hasDuration {
+                            Text(formatDuration(entry.duration))
+                              .font(.system(.body, design: .rounded))
+                              .frame(minWidth: 80, maxWidth: .infinity, alignment: .leading)
+                          }
+                          if hasReps {
+                            Text(entry.reps > 0 ? "\(entry.reps)" : "-")
+                              .font(.system(.body, design: .rounded))
+                              .frame(maxWidth: .infinity, alignment: .leading)
+                          }
+                          if hasDistance {
+                            Text(entry.distance.map { String(format: "%.1f", $0) } ?? "-")
+                              .font(.system(.body, design: .rounded))
+                              .frame(maxWidth: .infinity, alignment: .leading)
+                          }
+                          if hasWeight {
+                            Text(entry.weight.map { String(format: "%.1f", $0) } ?? "-")
+                              .font(.system(.body, design: .rounded))
+                              .frame(maxWidth: .infinity, alignment: .leading)
+                          }
+                        }
+                        if let description = entry.description, !description.isEmpty {
+                          Text(description)
+                            .font(.system(.subheadline, design: .rounded))
+                            .foregroundColor(.secondary)
+                            .padding(.top, 4)
+                            .padding(.leading, 28)
+                        }
+                        Divider()
+                      }
+                      .padding(.vertical, 8)
+                    }
+                  }
+                  .padding(.horizontal)
+                }
+              }
+              .listRowSeparator(.hidden)
+              .listRowBackground(Color("Background"))
+              .swipeActions(edge: .trailing, allowsFullSwipe: true) {
+                Button(role: .destructive) {
+                  deleteSet(setId: setId)
+                } label: {
+                  Label("Delete", systemImage: "trash")
+                }
+              }
+              .swipeActions(edge: .leading, allowsFullSwipe: true) {
+
+                Button(action: {
+                  if let exerciseTypeBySetId = DatabaseHelper.shared.fetchExerciseTypeBySetId(
+                    setId: setId)
+                  {
+                    editExerciseType = exerciseTypeBySetId
+                  }
+                  editExerciseSetId = setId
+                  showEditExerciseSet = true
+                }) {
+                  Label("Edit", systemImage: "pencil")
+                }
+                .tint(.blue)
+
+              }
+            }
+          }
+          .listStyle(PlainListStyle())
   }
 
   private func deleteSet(setId: Int64) {

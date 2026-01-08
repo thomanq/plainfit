@@ -33,7 +33,7 @@ func copyUrl(_ fileURL: URL, _ savedBookmark: Data?) async -> IntentResultContai
 struct ExportToCSVIntent: AppIntent {
   @AppStorage("bookmarkData") var savedBookmark: Data?
 
-  static var title: LocalizedStringResource = "Export to CSV"
+    static let title: LocalizedStringResource = "Export to CSV"
 
   @MainActor
   func perform() async -> some IntentResult & ReturnsValue<String> {
@@ -48,7 +48,7 @@ struct ExportToCSVIntent: AppIntent {
 struct BackupDataBaseIntent: AppIntent {
   @AppStorage("bookmarkData") var savedBookmark: Data?
 
-  static var title: LocalizedStringResource = "Back up database"
+    static let title: LocalizedStringResource = "Back up database"
 
   @MainActor
   func perform() async -> some IntentResult & ReturnsValue<String> {

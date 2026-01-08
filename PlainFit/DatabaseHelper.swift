@@ -174,6 +174,7 @@ struct FitnessEntry: Identifiable, Codable, FetchableRecord, PersistableRecord {
   let description: String?
   let exerciseTypeId: Int64
 
+  @MainActor
   func toCSVRow() -> String {
     let dateString = FitnessEntry.dateFormatter.string(from: date)
     let distance = distance != nil ? String(distance!) : "N/A"
@@ -224,7 +225,7 @@ struct ExerciseTypeCategory: Codable, FetchableRecord, PersistableRecord {
     }
   }
 }
-
+@MainActor
 class DatabaseHelper {
   static let shared = DatabaseHelper()
   private var dbQueue: DatabaseQueue!
